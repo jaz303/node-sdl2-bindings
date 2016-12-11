@@ -33,6 +33,17 @@ void initConstants(Local<Object> exports);
 #undef DEFSYM
 
 //
+// Helpers
+
+void extractRect(Isolate *isolate, Local<Object> obj, SDL_Rect *rect) {
+	auto ctx = isolate->GetCurrentContext();
+	rect->x = obj->Get(ctx, SYM(x)).ToLocalChecked()->Int32Value();
+	rect->y = obj->Get(ctx, SYM(y)).ToLocalChecked()->Int32Value();
+	rect->w = obj->Get(ctx, SYM(width)).ToLocalChecked()->Int32Value();
+	rect->h = obj->Get(ctx, SYM(height)).ToLocalChecked()->Int32Value();
+}
+
+//
 // Window
 
 v8::Persistent<v8::Function> Window::constructor;
@@ -253,7 +264,9 @@ METHOD(Surface::FillRect) {
 	uint32_t color;
 	SDL_Rect r;
 	if (args.Length() == 2) {
-		THROW(Error, "rect args not supported yet");
+		// FIXME: typecheck needed?
+		extractRect(isolate, args[0]->ToObject(), &r);
+		color = args[1]->Uint32Value();
 	} else if (args.Length() == 5) {
 		r.x = args[0]->Int32Value();
 		r.y = args[1]->Int32Value();
