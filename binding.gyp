@@ -7,8 +7,7 @@
 				"src/constants.cc"
 			],
 			"include_dirs": [
-				"src",
-				"<!(node -e \"require('nan')\")"
+				"src"
 			],
 			"link_settings": {
 				"libraries": [

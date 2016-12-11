@@ -1,6 +1,8 @@
-#include "pre.h"
+#include "deps.h"
 
-NS_BEGIN()
+namespace nsdl {
+
+using namespace v8;
 
 void initConstants(Local<Object> exports) {
     auto isolate = exports->GetIsolate();
@@ -847,4 +849,4 @@ void initConstants(Local<Object> exports) {
     exports->DefineOwnProperty(ctx, v8::String::NewFromUtf8(isolate, "TRUE"), v8::Uint32::New(isolate, SDL_TRUE), attrs);
 }
 
-NS_END()
+}

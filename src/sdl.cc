@@ -1,4 +1,3 @@
-#include "pre.h"
 #include <string>
 #include <iostream>
 
@@ -6,7 +5,13 @@
 // TODO: remove class crap, just use external fields and cast void pointers :)
 // TODO: optimise event loading
 
-NS_BEGIN()
+#include "deps.h"
+#include "macros.h"
+#include "types.h"
+
+namespace nsdl {
+
+using namespace v8;
 
 using v8::Boolean;
 using v8::FunctionCallbackInfo;
@@ -21,6 +26,10 @@ using v8::Exception;
 using v8::Array;
 using v8::Context;
 
+// Prototypes
+void initConstants(Local<Object> exports);
+
+// Symbols
 #define DEFSYM(name) v8::Persistent<v8::String> sym_##name;
 #include "symbols.x"
 #undef DEFSYM
@@ -28,31 +37,22 @@ using v8::Context;
 //
 // Window
 
-class Window : public node::ObjectWrap {
-public:
-	static void Init(Isolate *isolate);
-	static Local<Object> NewInstance(Isolate *isolate, SDL_Window *window);
-
-	static METHOD(New);
-
-	SDL_Window *window_;
-
-	void destroy() {
-		if (window_) {
-			SDL_DestroyWindow(window_);
-			window_ = nullptr;
-		}
-	}
-
-private:
-	static v8::Persistent<v8::Function> constructor;
-	Window(SDL_Window *window) : window_(window) {}
-	~Window() {
-		destroy();
-	}
-};
-
 v8::Persistent<v8::Function> Window::constructor;
+
+Window::Window(SDL_Window *window) : window_(window) {
+
+}
+
+Window::~Window() {
+	destroy();
+}
+
+void Window::destroy() {
+	if (window_) {
+		SDL_DestroyWindow(window_);
+		window_ = nullptr;
+	}
+}
 
 void Window::Init(Isolate *isolate) {
 	Local<FunctionTemplate> tpl = FunctionTemplate::New(isolate, New);
@@ -75,27 +75,17 @@ METHOD(Window::New) {}
 //
 // Surface
 
-class Surface : public node::ObjectWrap {
-public:
-	static void Init(Isolate *isolate);
-	static Local<Object> NewInstance(Isolate *isolate, SDL_Surface *surface, bool owned);
-
-	static METHOD(New);
-
-	SDL_Surface *surface_;
-	bool owned_;
-
-private:
-	static v8::Persistent<v8::Function> constructor;
-	Surface(SDL_Surface *surface, bool owned) : surface_(surface), owned_(owned) {}
-	~Surface() {
-		if (owned_) {
-			SDL_FreeSurface(surface_);
-		}
-	}
-};
-
 v8::Persistent<v8::Function> Surface::constructor;
+
+Surface::Surface(SDL_Surface *surface, bool owned) : surface_(surface), owned_(owned) {
+
+}
+
+Surface::~Surface() {
+	if (owned_) {
+		SDL_FreeSurface(surface_);
+	}
+}
 
 void Surface::Init(Isolate *isolate) {
 	Local<FunctionTemplate> tpl = FunctionTemplate::New(isolate, New);
@@ -636,4 +626,4 @@ void SDL2ModuleInit(Local<Object> exports) {
 
 NODE_MODULE(sdl2, SDL2ModuleInit);
 
-NS_END()
+}

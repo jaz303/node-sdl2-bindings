@@ -1,9 +1,3 @@
-#include <nan.h>
-#include <node.h>
-#include <v8.h>
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
-
 #define NS_BEGIN() \
 	namespace nsdl { \
 		using namespace v8;
@@ -83,9 +77,3 @@
 #define RETURN_BOOL(val) RETURN(MK_BOOL(val))
 #define RETURN_TRUE() RETURN(MK_TRUE())
 #define RETURN_FALSE() RETURN(MK_FALSE())
-
-NS_BEGIN()
-
-void initConstants(Local<Object> exports);
-
-NS_END()
