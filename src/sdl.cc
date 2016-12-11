@@ -1,8 +1,6 @@
 #include <string>
 #include <iostream>
 
-// TODO: blitting and clearing stuff
-// TODO: remove class crap, just use external fields and cast void pointers :)
 // TODO: optimise event loading
 
 #include "deps.h"
@@ -39,10 +37,7 @@ void initConstants(Local<Object> exports);
 
 v8::Persistent<v8::Function> Window::constructor;
 
-Window::Window(SDL_Window *window) : window_(window) {
-
-}
-
+Window::Window(SDL_Window *window) : window_(window) {}
 Window::~Window() {
 	destroy();
 }
@@ -57,7 +52,10 @@ void Window::destroy() {
 void Window::Init(Isolate *isolate) {
 	Local<FunctionTemplate> tpl = FunctionTemplate::New(isolate, New);
 	tpl->SetClassName(String::NewFromUtf8(isolate, "Window"));
-	tpl->InstanceTemplate()->SetInternalFieldCount(1);
+	tpl->InstanceTemplate()->SetInternalFieldCount(2);
+	DEFINE_METHOD(tpl, "update", Update);
+	DEFINE_GETTER(tpl, "surface", GetSurface);
+	DEFINE_ACCESSOR(tpl, "title", GetTitle, SetTitle);
 	constructor.Reset(isolate, tpl->GetFunction());
 }
 
@@ -72,15 +70,41 @@ Local<Object> Window::NewInstance(Isolate *isolate, SDL_Window *window) {
 
 METHOD(Window::New) {}
 
+METHOD(Window::Update) {
+	UNWRAP_ME(w, Window);
+	SDL_UpdateWindowSurface(w->window_);
+}
+
+GETTER(Window::GetSurface) {
+	BEGIN();
+	auto theSurface = args.This()->GetInternalField(1);
+	if (theSurface->IsUndefined()) {
+		UNWRAP_ME(w, Window);
+		theSurface = Surface::NewInstance(isolate, SDL_GetWindowSurface(w->window_), false);
+		args.This()->SetInternalField(1, theSurface);
+	}
+	RETURN(theSurface);
+}
+
+GETTER(Window::GetTitle) {
+	BEGIN();
+	UNWRAP_ME(w, Window);
+	RETURN(MK_STRING(SDL_GetWindowTitle(w->window_)));
+}
+
+SETTER(Window::SetTitle) {
+	BEGIN();
+	String::Utf8Value newTitle(value);
+	UNWRAP_ME(w, Window);
+	SDL_SetWindowTitle(w->window_, *newTitle);
+}
+
 //
 // Surface
 
 v8::Persistent<v8::Function> Surface::constructor;
 
-Surface::Surface(SDL_Surface *surface, bool owned) : surface_(surface), owned_(owned) {
-
-}
-
+Surface::Surface(SDL_Surface *surface, bool owned) : surface_(surface), owned_(owned) {}
 Surface::~Surface() {
 	if (owned_) {
 		SDL_FreeSurface(surface_);
@@ -91,6 +115,17 @@ void Surface::Init(Isolate *isolate) {
 	Local<FunctionTemplate> tpl = FunctionTemplate::New(isolate, New);
 	tpl->SetClassName(String::NewFromUtf8(isolate, "Surface"));
 	tpl->InstanceTemplate()->SetInternalFieldCount(1);
+	DEFINE_METHOD(tpl, "blit", Blit);
+	DEFINE_METHOD(tpl, "blitRect", BlitRect);
+	DEFINE_METHOD(tpl, "blitRectScaled", BlitRectScaled);
+	DEFINE_METHOD(tpl, "blitScaled", BlitScaled);
+	DEFINE_METHOD(tpl, "clear", Clear);
+	DEFINE_METHOD(tpl, "fillRect", FillRect);
+	DEFINE_METHOD(tpl, "mapRGB", MapRGB);
+	DEFINE_METHOD(tpl, "mapRGBA", MapRGBA);
+	DEFINE_GETTER(tpl, "width", GetWidth);
+	DEFINE_GETTER(tpl, "height", GetHeight);
+	DEFINE_GETTER(tpl, "pitch", GetPitch);
 	constructor.Reset(isolate, tpl->GetFunction());
 }
 
@@ -104,6 +139,187 @@ Local<Object> Surface::NewInstance(Isolate *isolate, SDL_Surface *surface, bool 
 }
 
 METHOD(Surface::New) {}
+
+// blit(src, x, y)
+// blit(src, sx, sy, sw, sh, x, y)
+METHOD(Surface::Blit) {
+	BEGIN();
+
+	UNWRAP_ME(dst, Surface);
+	UNWRAP(src, Surface, args[0]);
+
+	SDL_Surface *ds = dst->surface_, *ss = src->surface_;
+	SDL_Rect dr, sr;
+
+	switch (args.Length()) {
+		case 3:
+		{
+			dr.x = args[1]->Int32Value();
+			dr.y = args[2]->Int32Value();
+			SDL_BlitSurface(ss, NULL, ds, &dr);
+			break;
+		}
+		case 7:
+		{
+			sr.x = args[1]->Int32Value();
+			sr.y = args[2]->Int32Value();
+			sr.w = args[3]->Int32Value();
+			sr.h = args[4]->Int32Value();
+			dr.x = args[5]->Int32Value();
+			dr.y = args[6]->Int32Value();
+			SDL_BlitSurface(ss, &sr, ds, &dr);
+			break;
+		}
+		default:
+		{
+			THROW(TypeError, "argument error");
+		}
+	}
+}
+
+// blitRect(src, srcRect, destRect)
+// blitRect(src, srcRect, x, y)
+METHOD(Surface::BlitRect) {
+	BEGIN();
+	THROW(Error, "not implemented");
+}
+
+// blitRectScaled(src, srcRect, destRect)
+// blitRectScaled(src, srcRect, x, y)
+// blitRectScaled(src, srcRect, x, y, w, h)
+METHOD(Surface::BlitRectScaled) {
+	BEGIN();
+	THROW(Error, "not implemented");
+}
+
+// 3 blitScaled(src, x, y)
+// 5 blitScaled(src, x, y, w, h)
+// 7 blitScaled(src, sx, sy, sw, sh, x, y)
+// 9 blitScaled(src, sx, sy, sw, sh, x, y, w, h)
+METHOD(Surface::BlitScaled) {
+	BEGIN();
+
+	UNWRAP_ME(dst, Surface);
+	UNWRAP(src, Surface, args[0]);
+
+	SDL_Surface *ds = dst->surface_, *ss = src->surface_;
+	SDL_Rect dr, sr;
+
+	switch (args.Length()) {
+		case 3:
+		{
+			dr.x = args[1]->Int32Value();
+			dr.y = args[2]->Int32Value();
+			dr.w = ss->w;
+			dr.h = ss->h;
+			SDL_BlitScaled(ss, NULL, ds, &dr);
+			break;
+		}
+		case 5:
+		{
+			dr.x = args[1]->Int32Value();
+			dr.y = args[2]->Int32Value();
+			dr.w = args[3]->Int32Value();
+			dr.h = args[4]->Int32Value();
+			SDL_BlitScaled(ss, NULL, ds, &dr);
+			break;
+		}
+		case 7:
+		{
+			sr.x = args[1]->Int32Value();
+			sr.y = args[2]->Int32Value();
+			sr.w = dr.w = args[3]->Int32Value();
+			sr.h = dr.h = args[4]->Int32Value();
+			dr.x = args[5]->Int32Value();
+			dr.y = args[6]->Int32Value();
+			SDL_BlitScaled(ss, &sr, ds, &dr);
+			break;
+		}
+		case 9:
+		{
+			sr.x = args[1]->Int32Value();
+			sr.y = args[2]->Int32Value();
+			sr.w = args[3]->Int32Value();
+			sr.h = args[4]->Int32Value();
+			dr.x = args[5]->Int32Value();
+			dr.y = args[6]->Int32Value();
+			dr.w = args[7]->Int32Value();
+			dr.h = args[8]->Int32Value();
+			SDL_BlitScaled(ss, &sr, ds, &dr);
+			break;
+		}
+		default:
+		{
+			THROW(TypeError, "argument error");
+		}
+	}
+}
+
+METHOD(Surface::Clear) {
+	BEGIN();
+	NARGS(1);
+	UINT32ARG(color, 0);
+	UNWRAP_ME(s, Surface);
+	SDL_FillRect(s->surface_, NULL, color);
+}
+
+METHOD(Surface::FillRect) {
+	BEGIN();
+	UNWRAP_ME(s, Surface);
+	uint32_t color;
+	SDL_Rect r;
+	if (args.Length() == 2) {
+		THROW(Error, "rect args not supported yet");
+	} else if (args.Length() == 5) {
+		r.x = args[0]->Int32Value();
+		r.y = args[1]->Int32Value();
+		r.w = args[2]->Int32Value();
+		r.h = args[3]->Int32Value();
+		color = args[4]->Uint32Value();
+	} else {
+		THROW(TypeError, "argument error");
+	}
+	SDL_FillRect(s->surface_, &r, color);
+}
+
+METHOD(Surface::MapRGB) {
+	BEGIN();
+	NARGS(3);
+	INTARG(r, 0);
+	INTARG(g, 1);
+	INTARG(b, 2);
+	UNWRAP_ME(s, Surface);
+	RETURN(MK_NUMBER(SDL_MapRGB(s->surface_->format, r, g, b)));
+}
+
+METHOD(Surface::MapRGBA) {
+	BEGIN();
+	NARGS(4);
+	INTARG(r, 0);
+	INTARG(g, 1);
+	INTARG(b, 2);
+	INTARG(a, 3);
+	UNWRAP_ME(s, Surface);
+	RETURN(MK_NUMBER(SDL_MapRGBA(s->surface_->format, r, g, b, a)));
+}
+
+GETTER(Surface::GetWidth) {
+	BEGIN();
+	UNWRAP(s, Surface, args.This());
+	RETURN(MK_NUMBER(s->surface_->w));
+}
+
+GETTER(Surface::GetHeight) {
+	BEGIN();
+	UNWRAP(s, Surface, args.This());
+	RETURN(MK_NUMBER(s->surface_->h));	
+}
+
+GETTER(Surface::GetPitch) {
+	BEGIN();
+	UNWRAP(s, Surface, args.This());
+	RETURN(MK_NUMBER(s->surface_->pitch));
+}
 
 //
 //
@@ -150,12 +366,6 @@ METHOD(SetWindowSize) {
 	INTARG(h, 2);
 	UNWRAP(win, Window, args[0]);
 	SDL_SetWindowSize(win->window_, w, h);
-}
-
-METHOD(UpdateWindowSurface) {
-	BEGIN();
-	UNWRAP(w, Window, args[0]);
-	SDL_UpdateWindowSurface(w->window_);
 }
 
 //
@@ -584,7 +794,6 @@ void SDL2ModuleInit(Local<Object> exports) {
 	NODE_SET_METHOD(exports, "createWindow", CreateWindow);
 	NODE_SET_METHOD(exports, "destroyWindow", DestroyWindow);
 	NODE_SET_METHOD(exports, "setWindowSize", SetWindowSize);
-	NODE_SET_METHOD(exports, "updateWindowSurface", UpdateWindowSurface);
 
 	// Events
 	NODE_SET_METHOD(exports, "pollEvent", PollEvent);

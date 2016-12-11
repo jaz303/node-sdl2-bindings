@@ -5,11 +5,26 @@
 #define NS_END() \
 	}
 
+#define DEFINE_METHOD(tpl, name, method) \
+	NODE_SET_PROTOTYPE_METHOD(tpl, name, method)
+
+#define DEFINE_GETTER(tpl, name, method) \
+	tpl->InstanceTemplate()->SetAccessor(String::NewFromUtf8(isolate, name), method)
+
+#define DEFINE_ACCESSOR(tpl, name, getter, setter) \
+	tpl->InstanceTemplate()->SetAccessor(String::NewFromUtf8(isolate, name), getter, setter)
+
 #define UNUSED(exp) \
 	do { (void)(exp); } while(0)
 
 #define METHOD(name) \
 	void name(const FunctionCallbackInfo<Value>& args)
+
+#define GETTER(name) \
+	void name(Local<String> property, const PropertyCallbackInfo<Value>& args)
+
+#define SETTER(name) \
+	void name(Local<String> property, Local<Value> value, const PropertyCallbackInfo<void>& args)
 
 #define BEGIN() \
 	Isolate* isolate = args.GetIsolate(); \
@@ -38,6 +53,9 @@
 
 #define UNWRAP(name, type, from) \
 	type *name = node::ObjectWrap::Unwrap<type>((from)->ToObject())
+
+#define UNWRAP_ME(name, type) \
+	type *name = node::ObjectWrap::Unwrap<type>(args.This())
 
 #define NARGS(n) \
 	if (args.Length() != n) { \
