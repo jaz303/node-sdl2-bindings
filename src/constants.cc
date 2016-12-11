@@ -3,7 +3,6 @@
 namespace nsdl {
 
 using namespace v8;
-
 void initConstants(Local<Object> exports) {
     auto isolate = exports->GetIsolate();
     auto attrs = static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontDelete);
@@ -50,6 +49,8 @@ void initConstants(Local<Object> exports) {
     exports->DefineOwnProperty(ctx, v8::String::NewFromUtf8(isolate, "HINT_WINRT_PRIVACY_POLICY_URL"), v8::String::NewFromUtf8(isolate, "SDL_HINT_WINRT_PRIVACY_POLICY_URL"), attrs);
     exports->DefineOwnProperty(ctx, v8::String::NewFromUtf8(isolate, "HINT_XINPUT_ENABLED"), v8::String::NewFromUtf8(isolate, "SDL_HINT_XINPUT_ENABLED"), attrs);
     exports->DefineOwnProperty(ctx, v8::String::NewFromUtf8(isolate, "HINT_XINPUT_USE_OLD_JOYSTICK_MAPPING"), v8::String::NewFromUtf8(isolate, "SDL_HINT_XINPUT_USE_OLD_JOYSTICK_MAPPING"), attrs);
+    exports->DefineOwnProperty(ctx, v8::String::NewFromUtf8(isolate, "WINDOWPOS_CENTERED"), v8::Uint32::New(isolate, SDL_WINDOWPOS_CENTERED), attrs);
+    exports->DefineOwnProperty(ctx, v8::String::NewFromUtf8(isolate, "WINDOWPOS_UNDEFINED"), v8::Uint32::New(isolate, SDL_WINDOWPOS_UNDEFINED), attrs);
     exports->DefineOwnProperty(ctx, v8::String::NewFromUtf8(isolate, "ASSERTION_RETRY"), v8::Uint32::New(isolate, SDL_ASSERTION_RETRY), attrs);
     exports->DefineOwnProperty(ctx, v8::String::NewFromUtf8(isolate, "ASSERTION_BREAK"), v8::Uint32::New(isolate, SDL_ASSERTION_BREAK), attrs);
     exports->DefineOwnProperty(ctx, v8::String::NewFromUtf8(isolate, "ASSERTION_ABORT"), v8::Uint32::New(isolate, SDL_ASSERTION_ABORT), attrs);

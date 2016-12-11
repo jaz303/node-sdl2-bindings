@@ -1,7 +1,8 @@
 const S = process.stdout;
 
-S.write('#include "pre.h"\n\n');
-S.write('NS_BEGIN()\n\n');
+S.write('#include "deps.h"\n\n');
+S.write('namespace nsdl {\n\n');
+S.write('using namespace v8;\n');
 S.write('void initConstants(Local<Object> exports) {\n');
 S.write('    auto isolate = exports->GetIsolate();\n');
 S.write('    auto attrs = static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontDelete);\n');
@@ -65,6 +66,9 @@ values: [
 
 writeConstants({
 	values: [
+
+		'SDL_WINDOWPOS_CENTERED',
+		'SDL_WINDOWPOS_UNDEFINED',
 
 		'SDL_ASSERTION_RETRY',
 		'SDL_ASSERTION_BREAK',
@@ -918,7 +922,7 @@ writeConstants({
 });
 
 S.write('}\n\n');
-S.write('NS_END()\n');
+S.write('}\n');
 
 function writeConstants(spec) {
 	spec.values.forEach((n) => {

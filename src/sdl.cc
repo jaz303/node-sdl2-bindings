@@ -192,9 +192,8 @@ METHOD(Surface::BlitRectScaled) {
 	THROW(Error, "not implemented");
 }
 
-// 3 blitScaled(src, x, y)
-// 5 blitScaled(src, x, y, w, h)
-// 7 blitScaled(src, sx, sy, sw, sh, x, y)
+// 1 blitScaled(src) - fill destination with src
+// 5 blitScaled(src, x, y, w, h) - blit src into x,y,w,h
 // 9 blitScaled(src, sx, sy, sw, sh, x, y, w, h)
 METHOD(Surface::BlitScaled) {
 	BEGIN();
@@ -206,13 +205,9 @@ METHOD(Surface::BlitScaled) {
 	SDL_Rect dr, sr;
 
 	switch (args.Length()) {
-		case 3:
+		case 1:
 		{
-			dr.x = args[1]->Int32Value();
-			dr.y = args[2]->Int32Value();
-			dr.w = ss->w;
-			dr.h = ss->h;
-			SDL_BlitScaled(ss, NULL, ds, &dr);
+			SDL_BlitScaled(ss, NULL, ds, NULL);
 			break;
 		}
 		case 5:
@@ -222,17 +217,6 @@ METHOD(Surface::BlitScaled) {
 			dr.w = args[3]->Int32Value();
 			dr.h = args[4]->Int32Value();
 			SDL_BlitScaled(ss, NULL, ds, &dr);
-			break;
-		}
-		case 7:
-		{
-			sr.x = args[1]->Int32Value();
-			sr.y = args[2]->Int32Value();
-			sr.w = dr.w = args[3]->Int32Value();
-			sr.h = dr.h = args[4]->Int32Value();
-			dr.x = args[5]->Int32Value();
-			dr.y = args[6]->Int32Value();
-			SDL_BlitScaled(ss, &sr, ds, &dr);
 			break;
 		}
 		case 9:
