@@ -36,6 +36,9 @@
 	)); \
 	return
 
+#define THROW_SDL_ERROR() \
+	THROW(Error, SDL_GetError())
+
 #define SYM(name) \
 	sym_##name.Get(isolate)
 

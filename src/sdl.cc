@@ -63,8 +63,9 @@ void Window::destroy() {
 void Window::Init(Isolate *isolate) {
 	Local<FunctionTemplate> tpl = FunctionTemplate::New(isolate, New);
 	tpl->SetClassName(String::NewFromUtf8(isolate, "Window"));
-	tpl->InstanceTemplate()->SetInternalFieldCount(2);
+	tpl->InstanceTemplate()->SetInternalFieldCount(3);
 	DEFINE_METHOD(tpl, "update", Update);
+	DEFINE_METHOD(tpl, "createRenderer", CreateRenderer);
 	DEFINE_GETTER(tpl, "surface", GetSurface);
 	DEFINE_ACCESSOR(tpl, "title", GetTitle, SetTitle);
 	constructor.Reset(isolate, tpl->GetFunction());
@@ -84,6 +85,22 @@ METHOD(Window::New) {}
 METHOD(Window::Update) {
 	UNWRAP_ME(w, Window);
 	SDL_UpdateWindowSurface(w->window_);
+}
+
+METHOD(Window::CreateRenderer) {
+	BEGIN();
+	int index = -1;
+	uint32_t flags = 0;
+	if (args.Length() == 2) {
+		index = args[0]->Int32Value();
+		flags = args[1]->Uint32Value();
+	}
+	UNWRAP_ME(w, Window);
+	SDL_Renderer *renderer = SDL_CreateRenderer(w->window_, index, flags);
+	if (!renderer) {
+		THROW(Error, "could not create renderer");
+	}
+	RETURN(Renderer::NewInstance(isolate, renderer));
 }
 
 GETTER(Window::GetSurface) {
@@ -316,6 +333,370 @@ GETTER(Surface::GetPitch) {
 	BEGIN();
 	UNWRAP(s, Surface, args.This());
 	RETURN(MK_NUMBER(s->surface_->pitch));
+}
+
+//
+// Renderer
+
+v8::Persistent<v8::Function> Renderer::constructor;
+
+Renderer::Renderer(SDL_Renderer *renderer) : renderer_(renderer) {}
+Renderer::~Renderer() { SDL_DestroyRenderer(renderer_); }
+
+void Renderer::Init(Isolate *isolate) {
+	Local<FunctionTemplate> tpl = FunctionTemplate::New(isolate, New);
+	tpl->SetClassName(String::NewFromUtf8(isolate, "Renderer"));
+	tpl->InstanceTemplate()->SetInternalFieldCount(1);
+	DEFINE_ACCESSOR(tpl, "drawColor", GetDrawColor, SetDrawColor);
+	DEFINE_ACCESSOR(tpl, "blendMode", GetBlendMode, SetBlendMode);
+	DEFINE_METHOD(tpl, "createTexture", CreateTexture);
+	DEFINE_METHOD(tpl, "createTextureFromSurface", CreateTextureFromSurface);
+	DEFINE_METHOD(tpl, "clear", Clear);
+	DEFINE_METHOD(tpl, "copy", Copy);
+	DEFINE_METHOD(tpl, "copyRect", CopyRect);
+	DEFINE_METHOD(tpl, "copyEx", CopyEx);
+	DEFINE_METHOD(tpl, "copyRectEx", CopyRectEx);
+	DEFINE_METHOD(tpl, "drawLine", DrawLine);
+	DEFINE_METHOD(tpl, "drawPoint", DrawPoint);
+	DEFINE_METHOD(tpl, "drawRect", DrawRect);
+	DEFINE_METHOD(tpl, "fillRect", FillRect);
+	DEFINE_METHOD(tpl, "present", Present);
+	DEFINE_METHOD(tpl, "setRenderTarget", SetRenderTarget);
+	DEFINE_METHOD(tpl, "setDefaultRenderTarget", SetDefaultRenderTarget);
+	constructor.Reset(isolate, tpl->GetFunction());
+}
+
+Local<Object> Renderer::NewInstance(Isolate *isolate, SDL_Renderer *renderer) {
+	Local<Function> cons = Local<Function>::New(isolate, constructor);
+	Local<Context> context = isolate->GetCurrentContext();
+	Local<Object> instance = cons->NewInstance(context).ToLocalChecked();
+	Renderer *r = new Renderer(renderer);
+	r->Wrap(instance);
+	return instance;
+}
+
+METHOD(Renderer::New) {}
+
+GETTER(Renderer::GetDrawColor) {
+	BEGIN();
+	UNWRAP_ME(self, Renderer);
+	uint8_t a, r, g, b;
+	if (SDL_GetRenderDrawColor(self->renderer_, &r, &g, &b, &a) != 0) {
+		THROW_SDL_ERROR();
+	}
+	uint32_t argb = (a << 24) | (r << 16) | (g << 8) | b;
+	RETURN(MK_NUMBER(argb));
+}
+
+SETTER(Renderer::SetDrawColor) {
+	BEGIN();
+	UNWRAP_ME(self, Renderer);
+	uint32_t argb = value->Uint32Value();
+	uint8_t a = argb >> 24;
+	uint8_t r = argb >> 16;
+	uint8_t g = argb >> 8;
+	uint8_t b = argb;
+	if (SDL_SetRenderDrawColor(self->renderer_, r, g, b, a) != 0) {
+		THROW_SDL_ERROR();
+	}
+}
+
+GETTER(Renderer::GetBlendMode) {
+	BEGIN();
+	UNWRAP_ME(self, Renderer);
+	SDL_BlendMode out;
+	if (SDL_GetRenderDrawBlendMode(self->renderer_, &out) != 0) {
+		THROW_SDL_ERROR();
+	}
+	RETURN(MK_NUMBER(out));
+}
+
+SETTER(Renderer::SetBlendMode) {
+	BEGIN();
+	UNWRAP_ME(self, Renderer); 
+	if (SDL_SetRenderDrawBlendMode(self->renderer_, (SDL_BlendMode)value->Int32Value()) != 0) {
+		THROW_SDL_ERROR();
+	}
+}
+
+METHOD(Renderer::CreateTexture) {
+	BEGIN();
+	UNWRAP_ME(r, Renderer);
+	NARGS(4);
+	UINT32ARG(format, 0);
+	INTARG(flags, 1);
+	INTARG(width, 2);
+	INTARG(height, 3);
+	SDL_Texture *texture = SDL_CreateTexture(r->renderer_, format, flags, width, height);
+	if (texture == NULL) {
+		THROW_SDL_ERROR();
+	}
+	RETURN(Texture::NewInstance(isolate, texture));
+}
+
+METHOD(Renderer::CreateTextureFromSurface) {
+	BEGIN();
+	UNWRAP_ME(r, Renderer);
+	UNWRAP(s, Surface, args[0]);
+	SDL_Texture *texture = SDL_CreateTextureFromSurface(r->renderer_, s->surface_);
+	if (texture == NULL) {
+		THROW_SDL_ERROR();
+	}
+	RETURN(Texture::NewInstance(isolate, texture));
+}
+
+METHOD(Renderer::Clear) {
+	UNWRAP_ME(r, Renderer);
+	SDL_RenderClear(r->renderer_);
+}
+
+// 0 - cover target with texture
+// 4 - copy texture to target rect
+// 8 - copy texture src rect to target rect
+METHOD(Renderer::Copy) {
+	BEGIN();
+	UNWRAP_ME(self, Renderer);
+	UNWRAP(texture, Texture, args[0]);
+	SDL_Rect src, dest;
+	if (args.Length() == 1) {
+		SDL_RenderCopy(self->renderer_, texture->texture_, NULL, NULL);
+	} else if (args.Length() == 5) {
+		dest.x = args[1]->Int32Value();
+		dest.y = args[2]->Int32Value();
+		dest.w = args[3]->Int32Value();
+		dest.h = args[4]->Int32Value();
+		SDL_RenderCopy(self->renderer_, texture->texture_, NULL, &dest);
+	} else if (args.Length() == 9) {
+		src.x = args[1]->Int32Value();
+		src.y = args[2]->Int32Value();
+		src.w = args[3]->Int32Value();
+		src.h = args[4]->Int32Value();
+		dest.x = args[5]->Int32Value();
+		dest.y = args[6]->Int32Value();
+		dest.w = args[7]->Int32Value();
+		dest.h = args[8]->Int32Value();
+		SDL_RenderCopy(self->renderer_, texture->texture_, &src, &dest);
+	} else {
+		THROW(Error, "argument error");
+	}
+}
+
+// 9 - texture, dest-rect, rotation, cx, cy, flags
+// 13 - texture, src-rect, dest-rect, rotation, cx, cy, flags
+METHOD(Renderer::CopyEx) {
+	BEGIN();
+	UNWRAP_ME(self, Renderer);
+	UNWRAP(texture, Texture, args[0]);
+	SDL_Rect src, dest;
+	SDL_Rect *srcp;
+	SDL_Point center;
+	SDL_Point *centerp = &center;
+	int base;
+	if (args.Length() == 9) {
+		srcp = NULL;
+		base = 1;
+	} else if (args.Length() == 13) {
+		srcp = &src;
+		base = 5;
+		src.x = args[1]->Int32Value();
+		src.y = args[2]->Int32Value();
+		src.w = args[3]->Int32Value();
+		src.h = args[4]->Int32Value();
+	} else {
+		THROW(TypeError, "argument error");
+	}
+	dest.x = args[base+0]->Int32Value();
+	dest.y = args[base+1]->Int32Value();
+	dest.w = args[base+2]->Int32Value();
+	dest.h = args[base+3]->Int32Value();
+	double rotation = args[base+4]->NumberValue();
+	center.x = args[base+5]->Int32Value();
+	center.y = args[base+6]->Int32Value();
+	if (center.x == -1) {
+		centerp = NULL;
+	}
+	SDL_RendererFlip flip = (SDL_RendererFlip)args[base+7]->Int32Value();
+	SDL_RenderCopyEx(self->renderer_, texture->texture_, srcp, &dest, rotation, centerp, flip);
+}
+
+METHOD(Renderer::CopyRect) {
+	BEGIN();
+	NARGS(3);
+	UNWRAP_ME(self, Renderer);
+	UNWRAP(texture, Texture, args[0]);
+	SDL_Rect src, dest;
+	SDL_Rect *srcp = NULL, *destp = NULL;
+	if (args[1]->IsObject()) {
+		extractRect(isolate, args[1]->ToObject(), &src);
+		srcp = &src;
+	}
+	if (args[2]->IsObject()) {
+		extractRect(isolate, args[2]->ToObject(), &dest);
+		destp = &dest;
+	}
+	SDL_RenderCopy(self->renderer_, texture->texture_, srcp, destp);
+}
+
+// 7 - texture, src-rect, dest-rect, rotation, cx, cy, flags
+METHOD(Renderer::CopyRectEx) {
+	BEGIN();
+	NARGS(7);
+	UNWRAP_ME(self, Renderer);
+	UNWRAP(texture, Texture, args[0]);
+	SDL_Rect src, dest;
+	SDL_Rect *srcp = NULL, *destp = NULL;
+	if (args[1]->IsObject()) {
+		extractRect(isolate, args[1]->ToObject(), &src);
+		srcp = &src;
+	}
+	if (args[2]->IsObject()) {
+		extractRect(isolate, args[2]->ToObject(), &dest);
+		destp = &dest;
+	}
+	SDL_Point center;
+	SDL_Point *centerp = &center;
+	double rotation = args[3]->NumberValue();
+	center.x = args[4]->Int32Value();
+	center.y = args[5]->Int32Value();
+	if (center.x == -1) {
+		centerp = NULL;
+	}
+	SDL_RendererFlip flip = (SDL_RendererFlip)args[6]->Int32Value();
+	SDL_RenderCopyEx(self->renderer_, texture->texture_, srcp, destp, rotation, centerp, flip);
+}
+
+METHOD(Renderer::DrawLine) {
+	BEGIN();
+	NARGS(4);
+	INTARG(x1, 0);
+	INTARG(y1, 1);
+	INTARG(x2, 2);
+	INTARG(y2, 3);
+	UNWRAP_ME(self, Renderer);
+	SDL_RenderDrawLine(self->renderer_, x1, y1, x2, y2);
+}
+
+METHOD(Renderer::DrawPoint) {
+	BEGIN();
+	NARGS(2);
+	INTARG(x, 0);
+	INTARG(y, 1);
+	UNWRAP_ME(self, Renderer);
+	SDL_RenderDrawPoint(self->renderer_, x, y);
+}
+
+void drawOrFillRect(SDL_Renderer *renderer, const FunctionCallbackInfo<Value>& args, bool fill) {
+	Isolate *isolate = args.GetIsolate();
+	SDL_Rect rect;
+	if (args.Length() == 1) {
+		extractRect(isolate, args[0]->ToObject(), &rect);
+	} else if (args.Length() == 4) {
+		rect.x = args[0]->Int32Value();
+		rect.y = args[1]->Int32Value();
+		rect.w = args[2]->Int32Value();
+		rect.h = args[3]->Int32Value();
+	} else {
+		THROW(TypeError, "argument error");
+	}
+	if (fill) {
+		SDL_RenderFillRect(renderer, &rect);
+	} else {
+		SDL_RenderDrawRect(renderer, &rect);
+	}
+}
+
+METHOD(Renderer::DrawRect) {
+	UNWRAP_ME(self, Renderer);
+	drawOrFillRect(self->renderer_, args, false);
+}
+
+METHOD(Renderer::FillRect) {
+	UNWRAP_ME(self, Renderer);
+	drawOrFillRect(self->renderer_, args, true);
+}
+
+METHOD(Renderer::Present) {
+	UNWRAP_ME(r, Renderer);
+	SDL_RenderPresent(r->renderer_);
+}
+
+METHOD(Renderer::SetRenderTarget) {
+	BEGIN();
+	UNWRAP_ME(r, Renderer);
+	UNWRAP(t, Texture, args[0]);
+	if (SDL_SetRenderTarget(r->renderer_, t->texture_) != 0) {
+		THROW_SDL_ERROR();
+	}
+}
+
+METHOD(Renderer::SetDefaultRenderTarget) {
+	BEGIN();
+	UNWRAP_ME(r, Renderer);
+	if (SDL_SetRenderTarget(r->renderer_, NULL) != 0) {
+		THROW_SDL_ERROR();
+	}
+}
+
+//
+// Texture
+
+v8::Persistent<v8::Function> Texture::constructor;
+
+Texture::Texture(SDL_Texture *texture) : texture_(texture) {}
+Texture::~Texture() { SDL_DestroyTexture(texture_); }
+
+void Texture::Init(Isolate *isolate) {
+	Local<FunctionTemplate> tpl = FunctionTemplate::New(isolate, New);
+	tpl->SetClassName(String::NewFromUtf8(isolate, "Texture"));
+	tpl->InstanceTemplate()->SetInternalFieldCount(1);
+	DEFINE_GETTER(tpl, "width", GetWidth);
+	DEFINE_GETTER(tpl, "height", GetHeight);
+	DEFINE_GETTER(tpl, "format", GetFormat);
+	DEFINE_GETTER(tpl, "access", GetAccess);
+	constructor.Reset(isolate, tpl->GetFunction());
+}
+
+Local<Object> Texture::NewInstance(Isolate *isolate, SDL_Texture *texture) {
+	Local<Function> cons = Local<Function>::New(isolate, constructor);
+	Local<Context> context = isolate->GetCurrentContext();
+	Local<Object> instance = cons->NewInstance(context).ToLocalChecked();
+	Texture *t = new Texture(texture);
+	t->Wrap(instance);
+	return instance;
+}
+
+METHOD(Texture::New) {}
+
+GETTER(Texture::GetWidth) {
+	BEGIN();
+	UNWRAP_ME(t, Texture);
+	int out;
+	SDL_QueryTexture(t->texture_, NULL, NULL, &out, NULL);
+	RETURN(MK_NUMBER(out));
+}
+
+GETTER(Texture::GetHeight) {
+	BEGIN();
+	UNWRAP_ME(t, Texture);
+	int out;
+	SDL_QueryTexture(t->texture_, NULL, NULL, NULL, &out);
+	RETURN(MK_NUMBER(out));	
+}
+
+GETTER(Texture::GetFormat) {
+	BEGIN();
+	UNWRAP_ME(t, Texture);
+	uint32_t out;
+	SDL_QueryTexture(t->texture_, &out, NULL, NULL, NULL);
+	RETURN(MK_NUMBER(out));
+}
+
+GETTER(Texture::GetAccess) {
+	BEGIN();
+	UNWRAP_ME(t, Texture);
+	int out;
+	SDL_QueryTexture(t->texture_, NULL, &out, NULL, NULL);
+	RETURN(MK_NUMBER(out));
 }
 
 //
@@ -786,6 +1167,8 @@ void SDL2ModuleInit(Local<Object> exports) {
 
 	Window::Init(isolate);
 	Surface::Init(isolate);
+	Renderer::Init(isolate);
+	Texture::Init(isolate);
 
 	NODE_SET_METHOD(exports, "init", Init);
 	NODE_SET_METHOD(exports, "createWindow", CreateWindow);
