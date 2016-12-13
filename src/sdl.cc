@@ -649,6 +649,8 @@ void Texture::Init(Isolate *isolate) {
     Local<FunctionTemplate> tpl = FunctionTemplate::New(isolate, New);
     tpl->SetClassName(String::NewFromUtf8(isolate, "Texture"));
     tpl->InstanceTemplate()->SetInternalFieldCount(1);
+    DEFINE_METHOD(tpl, "bind", Bind);
+    DEFINE_METHOD(tpl, "unbind", Unbind);
     DEFINE_GETTER(tpl, "width", GetWidth);
     DEFINE_GETTER(tpl, "height", GetHeight);
     DEFINE_GETTER(tpl, "format", GetFormat);
@@ -666,6 +668,29 @@ Local<Object> Texture::NewInstance(Isolate *isolate, SDL_Texture *texture) {
 }
 
 METHOD(Texture::New) {}
+
+METHOD(Texture::Bind) {
+    BEGIN();
+    UNWRAP_ME(self, Texture);
+    float width, height;
+    if (SDL_GL_BindTexture(self->texture_, &width, &height) != 0) {
+        THROW_SDL_ERROR();
+    }
+    if (args.Length() > 0) {
+        auto obj = args[0]->ToObject();
+        auto ctx = isolate->GetCurrentContext();
+        obj->CreateDataProperty(ctx, SYM(width), MK_NUMBER(width));
+        obj->CreateDataProperty(ctx, SYM(height), MK_NUMBER(height));
+    }
+}
+
+METHOD(Texture::Unbind) {
+    BEGIN();
+    UNWRAP_ME(self, Texture);
+    if (SDL_GL_UnbindTexture(self->texture_) != 0) {
+        THROW_SDL_ERROR();
+    }
+}
 
 GETTER(Texture::GetWidth) {
     BEGIN();

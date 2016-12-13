@@ -118,6 +118,9 @@ private:
 
     static METHOD(New);
 
+    static METHOD(Bind);
+    static METHOD(Unbind);
+
     static GETTER(GetWidth);
     static GETTER(GetHeight);
     static GETTER(GetFormat);
