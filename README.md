@@ -7,3 +7,11 @@ To avoid maintaining an internal map of joystick instance ID to `SDL_Joystick*`,
 ### SDL_Image
 
 Only implemented functions are `IMG_Init()`, `IMG_Quit()` and `IMG_Load()`.
+
+## Things that won't be implemented
+  
+  - Threads
+  - Timers
+  - File Abstraction
+  - Rectangle Functions
+  - Shared Object Support
