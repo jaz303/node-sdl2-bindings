@@ -1261,7 +1261,7 @@ void SDL2ModuleInit(Local<Object> exports) {
     // Clipboard
     NODE_SET_METHOD(exports, "getClipboardText", GetClipboardText);
     NODE_SET_METHOD(exports, "hasClipboardText", HasClipboardText);
-    NODE_SET_METHOD(exports, "SetClipboardText", SetClipboardText);
+    NODE_SET_METHOD(exports, "setClipboardText", SetClipboardText);
 
     // Images
     NODE_SET_METHOD(exports, "imageInit", ImageInit);
