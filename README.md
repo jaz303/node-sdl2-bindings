@@ -10,8 +10,9 @@ Only implemented functions are `IMG_Init()`, `IMG_Quit()` and `IMG_Load()`.
 
 ## Things that won't be implemented
   
-  - Threads
-  - Timers
-  - File Abstraction
-  - Rectangle Functions
+  - Logging - use existing node.js logging libraries
+  - Threads - not applicable to node
+  - Timers - use `setTimeout()`, `setInterval()`
+  - File Abstraction - use `fs` package, streams etc.
+  - Rectangle Functions - implement your own rectangle class or import one of the many on npm. Use objects with keys `x`, `y`, `width` and `height.
   - Shared Object Support
