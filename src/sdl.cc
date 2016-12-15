@@ -1147,6 +1147,33 @@ METHOD(NumJoysticks) {
 }
 
 //
+// Clipboard
+
+METHOD(GetClipboardText) {
+    BEGIN();
+    const char *text = SDL_GetClipboardText();
+    if (text == NULL) {
+        THROW_SDL_ERROR();
+    } else {
+        RETURN(MK_STRING(text));
+    }
+}
+
+METHOD(HasClipboardText) {
+    BEGIN();
+    RETURN(MK_BOOL(SDL_HasClipboardText() == SDL_TRUE));
+}
+
+METHOD(SetClipboardText) {
+    BEGIN();
+    String::Utf8Value text(args[0]->ToString());
+    int res = SDL_SetClipboardText(*text);
+    if (res != 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
+//
 // SDL2_image
 
 METHOD(ImageInit) {
@@ -1230,6 +1257,11 @@ void SDL2ModuleInit(Local<Object> exports) {
     NODE_SET_METHOD(exports, "joystickOpen", JoystickOpen);
     NODE_SET_METHOD(exports, "joystickUpdate", JoystickUpdate);
     NODE_SET_METHOD(exports, "numJoysticks", NumJoysticks);
+
+    // Clipboard
+    NODE_SET_METHOD(exports, "getClipboardText", GetClipboardText);
+    NODE_SET_METHOD(exports, "hasClipboardText", HasClipboardText);
+    NODE_SET_METHOD(exports, "SetClipboardText", SetClipboardText);
 
     // Images
     NODE_SET_METHOD(exports, "imageInit", ImageInit);
