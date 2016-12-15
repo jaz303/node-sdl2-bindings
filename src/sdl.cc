@@ -1174,6 +1174,20 @@ METHOD(SetClipboardText) {
 }
 
 //
+// Timing
+
+METHOD(Delay) {
+    BEGIN();
+    UINT32ARG(ms, 0);
+    SDL_Delay(ms);
+}
+
+METHOD(GetTicks) {
+    BEGIN();
+    RETURN(MK_NUMBER(SDL_GetTicks()));
+}
+
+//
 // SDL2_image
 
 METHOD(ImageInit) {
@@ -1262,6 +1276,10 @@ void SDL2ModuleInit(Local<Object> exports) {
     NODE_SET_METHOD(exports, "getClipboardText", GetClipboardText);
     NODE_SET_METHOD(exports, "hasClipboardText", HasClipboardText);
     NODE_SET_METHOD(exports, "setClipboardText", SetClipboardText);
+
+    // Timings
+    NODE_SET_METHOD(exports, "delay", Delay);
+    NODE_SET_METHOD(exports, "getTicks", GetTicks);
 
     // Images
     NODE_SET_METHOD(exports, "imageInit", ImageInit);
