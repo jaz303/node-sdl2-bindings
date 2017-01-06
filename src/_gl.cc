@@ -47,10 +47,12 @@ METHOD(GLSwapWindow) {
 
 void initGL(Local<Object> exports) {
     auto isolate = exports->GetIsolate();
-    auto ctx = MK_OBJECT();
-    NODE_SET_METHOD(ctx, "getAttribute", GLGetAttribute);
-    NODE_SET_METHOD(ctx, "setAttribute", GLSetAttribute);
-    NODE_SET_METHOD(ctx, "resetAttributes", GLResetAttributes);
-    NODE_SET_METHOD(ctx, "makeCurrent", GLMakeCurrent);
-    NODE_SET_METHOD(ctx, "swapWindow", GLSwapWindow);
+    auto gl = MK_OBJECT();
+    auto ctx = isolate->GetCurrentContext();
+    exports->CreateDataProperty(ctx, SYM(gl), gl);
+    NODE_SET_METHOD(gl, "getAttribute", GLGetAttribute);
+    NODE_SET_METHOD(gl, "setAttribute", GLSetAttribute);
+    NODE_SET_METHOD(gl, "resetAttributes", GLResetAttributes);
+    NODE_SET_METHOD(gl, "makeCurrent", GLMakeCurrent);
+    NODE_SET_METHOD(gl, "swapWindow", GLSwapWindow);
 }
