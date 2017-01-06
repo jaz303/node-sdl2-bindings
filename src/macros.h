@@ -48,11 +48,15 @@
 #define UINT32(val) \
     (val)->Uint32Value()
 
+#define NUMBER(val) \
+    (val)->NumberValue()
+
 #define MK_NUMBER(val) v8::Number::New(isolate, (val))
 #define MK_STRING(val) v8::String::NewFromUtf8(isolate, (val))
 #define MK_BOOL(val) v8::Boolean::New(isolate, (val))
 #define MK_TRUE() v8::True(isolate)
 #define MK_FALSE() v8::False(isolate)
+#define MK_OBJECT() v8::Object::New(isolate)
 
 #define UNWRAP(name, type, from) \
     type *name = node::ObjectWrap::Unwrap<type>((from)->ToObject())
@@ -82,11 +86,20 @@
     } \
     Local<Object> name = args[ix]->ToObject()
 
+#define ARRAYARG(name, ix) \
+    if (!args[ix]->IsObject()) { \
+        THROW(TypeError, "argument error"); \
+    } \
+    Local<Array> name = Local<Array>::Cast(args[ix])
+
 #define STRINGARG(name, ix) \
     if (!args[ix]->IsString()) { \
         THROW(TypeError, "argument error"); \
     } \
     String::Utf8Value name(args[ix])
+
+#define DOUBLEARG(name, ix) \
+    ARG(double, name, ix, IsNumber, NumberValue)
 
 #define INTARG(name, ix) \
     ARG(int, name, ix, IsNumber, Int32Value)
@@ -98,3 +111,6 @@
 #define RETURN_BOOL(val) RETURN(MK_BOOL(val))
 #define RETURN_TRUE() RETURN(MK_TRUE())
 #define RETURN_FALSE() RETURN(MK_FALSE())
+
+#define GET_CONTEXT() auto ctx = isolate->GetCurrentContext()
+#define SET_KEY(obj, key, val) obj->CreateDataProperty(ctx, key, val)

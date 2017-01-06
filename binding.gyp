@@ -7,14 +7,15 @@
 				"src/constants.cc"
 			],
 			"include_dirs": [
-				"src"
+				"src",
+				"/usr/local/include"
 			],
 			"link_settings": {
 				"libraries": [
 					"-lSDL2",
 					"-lSDL2_gfx",
-					"-lSDL2_mixer",
 					"-lSDL2_image",
+					"-lcairo",
 					"-L/usr/local/lib",
 					"-Wl,-rpath,/usr/local/lib"
 				]

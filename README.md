@@ -1,3 +1,7 @@
+# luxor
+
+Luxor is a node module wrapping SDL, OpenGL(ES) and Cairo. It's a bit of a behemoth.
+
 ## Notes
 
 ### Joysticks
@@ -7,6 +11,10 @@ To avoid maintaining an internal map of joystick instance ID to `SDL_Joystick*`,
 ### SDL_Image
 
 Only implemented functions are `IMG_Init()`, `IMG_Quit()` and `IMG_Load()`.
+
+## Things that are still to be implemented
+
+For a list of outstanding stuff, run `make todo`.
 
 ## Things that won't be implemented
   

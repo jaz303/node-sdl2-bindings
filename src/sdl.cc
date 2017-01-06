@@ -32,117 +32,34 @@ void initConstants(Local<Object> exports);
 #include "symbols.x"
 #undef DEFSYM
 
-//
-// Helpers
+#include "_gl.cc"
 
-void extractRect(Isolate *isolate, Local<Object> obj, SDL_Rect *rect) {
-    auto ctx = isolate->GetCurrentContext();
-    rect->x = obj->Get(ctx, SYM(x)).ToLocalChecked()->Int32Value();
-    rect->y = obj->Get(ctx, SYM(y)).ToLocalChecked()->Int32Value();
-    rect->w = obj->Get(ctx, SYM(width)).ToLocalChecked()->Int32Value();
-    rect->h = obj->Get(ctx, SYM(height)).ToLocalChecked()->Int32Value();
-}
+#include "_helpers.cc"
+#include "_display.cc"
+#include "_gl_context.cc"
+#include "_window.cc"
 
-//
-// Window
 
-v8::Persistent<v8::Function> Window::constructor;
-
-Window::Window(SDL_Window *window) : window_(window) {}
-Window::~Window() {
-    destroy();
-}
-
-void Window::destroy() {
-    if (window_) {
-        SDL_DestroyWindow(window_);
-        window_ = nullptr;
-    }
-}
-
-void Window::Init(Isolate *isolate) {
-    Local<FunctionTemplate> tpl = FunctionTemplate::New(isolate, New);
-    tpl->SetClassName(String::NewFromUtf8(isolate, "Window"));
-    tpl->InstanceTemplate()->SetInternalFieldCount(3);
-    DEFINE_METHOD(tpl, "update", Update);
-    DEFINE_METHOD(tpl, "createRenderer", CreateRenderer);
-    DEFINE_GETTER(tpl, "surface", GetSurface);
-    DEFINE_ACCESSOR(tpl, "title", GetTitle, SetTitle);
-    constructor.Reset(isolate, tpl->GetFunction());
-}
-
-Local<Object> Window::NewInstance(Isolate *isolate, SDL_Window *window) {
-    Local<Function> cons = Local<Function>::New(isolate, constructor);
-    Local<Context> context = isolate->GetCurrentContext();
-    Local<Object> instance = cons->NewInstance(context).ToLocalChecked();
-    Window *w = new Window(window);
-    w->Wrap(instance);
-    return instance;
-}
-
-METHOD(Window::New) {}
-
-METHOD(Window::Update) {
-    UNWRAP_ME(w, Window);
-    SDL_UpdateWindowSurface(w->window_);
-}
-
-METHOD(Window::CreateRenderer) {
-    BEGIN();
-    int index = -1;
-    uint32_t flags = 0;
-    if (args.Length() == 2) {
-        index = args[0]->Int32Value();
-        flags = args[1]->Uint32Value();
-    }
-    UNWRAP_ME(w, Window);
-    SDL_Renderer *renderer = SDL_CreateRenderer(w->window_, index, flags);
-    if (!renderer) {
-        THROW(Error, "could not create renderer");
-    }
-    RETURN(Renderer::NewInstance(isolate, renderer));
-}
-
-GETTER(Window::GetSurface) {
-    BEGIN();
-    auto theSurface = args.This()->GetInternalField(1);
-    if (theSurface->IsUndefined()) {
-        UNWRAP_ME(w, Window);
-        theSurface = Surface::NewInstance(isolate, SDL_GetWindowSurface(w->window_), false);
-        args.This()->SetInternalField(1, theSurface);
-    }
-    RETURN(theSurface);
-}
-
-GETTER(Window::GetTitle) {
-    BEGIN();
-    UNWRAP_ME(w, Window);
-    RETURN(MK_STRING(SDL_GetWindowTitle(w->window_)));
-}
-
-SETTER(Window::SetTitle) {
-    BEGIN();
-    String::Utf8Value newTitle(value);
-    UNWRAP_ME(w, Window);
-    SDL_SetWindowTitle(w->window_, *newTitle);
-}
 
 //
 // Surface
 
 v8::Persistent<v8::Function> Surface::constructor;
 
-Surface::Surface(SDL_Surface *surface, bool owned) : surface_(surface), owned_(owned) {}
+Surface::Surface(SDL_Surface *surface, bool owned) : surface_(surface), owned_(owned), cairoContext_(nullptr) {}
 Surface::~Surface() {
     if (owned_) {
         SDL_FreeSurface(surface_);
+    }
+    if (cairoContext_) {
+        cairo_destroy(cairoContext_);
     }
 }
 
 void Surface::Init(Isolate *isolate) {
     Local<FunctionTemplate> tpl = FunctionTemplate::New(isolate, New);
     tpl->SetClassName(String::NewFromUtf8(isolate, "Surface"));
-    tpl->InstanceTemplate()->SetInternalFieldCount(1);
+    tpl->InstanceTemplate()->SetInternalFieldCount(2);
     DEFINE_METHOD(tpl, "blit", Blit);
     DEFINE_METHOD(tpl, "blitRect", BlitRect);
     DEFINE_METHOD(tpl, "blitRectScaled", BlitRectScaled);
@@ -154,6 +71,9 @@ void Surface::Init(Isolate *isolate) {
     DEFINE_GETTER(tpl, "width", GetWidth);
     DEFINE_GETTER(tpl, "height", GetHeight);
     DEFINE_GETTER(tpl, "pitch", GetPitch);
+
+    DEFINE_METHOD(tpl, "getContext", GetContext);
+
     constructor.Reset(isolate, tpl->GetFunction());
 }
 
@@ -333,6 +253,30 @@ GETTER(Surface::GetPitch) {
     BEGIN();
     UNWRAP(s, Surface, args.This());
     RETURN(MK_NUMBER(s->surface_->pitch));
+}
+
+// FIXME: error/return value checking from cairo functions
+METHOD(Surface::GetContext) {
+    BEGIN();
+    UNWRAP_ME(self, Surface);
+    auto existing = args.This()->GetInternalField(1);
+    if (existing->IsUndefined()) {
+        auto cairoSurface = cairo_image_surface_create_for_data(
+            (unsigned char*)self->surface_->pixels,
+            CAIRO_FORMAT_ARGB32,
+            self->surface_->w,
+            self->surface_->h,
+            self->surface_->pitch
+        );
+        auto cairoContext = cairo_create(cairoSurface);
+        cairo_surface_destroy(cairoSurface);
+        auto ctx = Context2D::NewInstance(isolate, cairoContext);
+        cairo_destroy(cairoContext);
+        args.This()->SetInternalField(1, ctx);
+        RETURN(ctx);
+    } else {
+        RETURN(existing);
+    }
 }
 
 //
@@ -725,6 +669,49 @@ GETTER(Texture::GetAccess) {
 }
 
 //
+// Context2D
+
+// TODO: this class should hold a reference to the surface in an internal
+// field so that the surface will never be destroyed for as long as there's
+// an active reference to the context. Also provide a getter for it.
+
+v8::Persistent<v8::Function> Context2D::constructor;
+
+Context2D::Context2D(cairo_t *ctx) : ctx_(ctx) { cairo_reference(ctx_); }
+Context2D::~Context2D() { cairo_destroy(ctx_); }
+
+void Context2D::Init(Isolate *isolate) {
+    Local<FunctionTemplate> tpl = FunctionTemplate::New(isolate, New);
+    tpl->SetClassName(String::NewFromUtf8(isolate, "Context2D"));
+    tpl->InstanceTemplate()->SetInternalFieldCount(1);
+    DEFINE_METHOD(tpl, "save", Save);
+    DEFINE_METHOD(tpl, "restore", Restore);
+    // DEFINE_METHOD(tpl, "bind", Bind);
+    constructor.Reset(isolate, tpl->GetFunction());
+}
+
+Local<Object> Context2D::NewInstance(Isolate *isolate, cairo_t *cctx) {
+    Local<Function> cons = Local<Function>::New(isolate, constructor);
+    Local<Context> context = isolate->GetCurrentContext();
+    Local<Object> instance = cons->NewInstance(context).ToLocalChecked();
+    Context2D *c = new Context2D(cctx);
+    c->Wrap(instance);
+    return instance;
+}
+
+METHOD(Context2D::New) {}
+
+METHOD(Context2D::Save) {
+    UNWRAP_ME(self, Context2D);
+    cairo_save(self->ctx_);
+}
+
+METHOD(Context2D::Restore) {
+    UNWRAP_ME(self, Context2D);
+    cairo_restore(self->ctx_);
+}
+
+//
 //
 
 METHOD(Init) {
@@ -737,226 +724,10 @@ METHOD(Init) {
     args.GetReturnValue().Set(Boolean::New(isolate, res == 0));
 }
 
-METHOD(CreateWindow) {
-    BEGIN();
-
-    NARGS(6);
-    STRINGARG(title, 0);
-    INTARG(x, 1);
-    INTARG(y, 2);
-    INTARG(w, 3);
-    INTARG(h, 4);
-    UINT32ARG(flags, 5);
-
-    SDL_Window *win = SDL_CreateWindow(*title, x, y, w, h, flags);
-    if (!win) {
-        THROW(Error, "couldn't create window");
-    }
-
-    RETURN(Window::NewInstance(isolate, win));
-}
-
-METHOD(DestroyWindow) {
-    BEGIN();
-    UNWRAP(w, Window, args[0]);
-    w->destroy();
-}
-
-METHOD(SetWindowSize) {
-    BEGIN();
-    NARGS(3);
-    INTARG(w, 1);
-    INTARG(h, 2);
-    UNWRAP(win, Window, args[0]);
-    SDL_SetWindowSize(win->window_, w, h);
-}
-
 //
 // Events
 
-#define EVKEY(name) \
-    Local<Object> evinfo = Object::New(isolate); \
-    evt->CreateDataProperty(ctx, SYM(name), evinfo)
-
-#define EVSET(key, value) \
-    evinfo->CreateDataProperty(ctx, SYM(key), value)
-
-void populateEvent(Isolate *isolate, Local<Object> evt, SDL_Event *sdlEvent) {
-    auto ctx = isolate->GetCurrentContext();
-    evt->CreateDataProperty(ctx, SYM(type), Number::New(isolate, sdlEvent->type));
-    switch (sdlEvent->type) {
-        case SDL_WINDOWEVENT:
-        {
-            break;
-        }
-        case SDL_SYSWMEVENT:
-        {
-            break;
-        }
-        case SDL_KEYDOWN:
-        case SDL_KEYUP:
-        {
-            break;
-        }
-        case SDL_MOUSEMOTION:
-        {
-            EVKEY(motion);
-            EVSET(timestamp, MK_NUMBER(sdlEvent->motion.timestamp));
-            EVSET(windowId, MK_NUMBER(sdlEvent->motion.windowID));
-            EVSET(which, MK_NUMBER(sdlEvent->motion.which));
-            EVSET(state, MK_NUMBER(sdlEvent->motion.state));
-            EVSET(x, MK_NUMBER(sdlEvent->motion.x));
-            EVSET(y, MK_NUMBER(sdlEvent->motion.y));
-            EVSET(xRel, MK_NUMBER(sdlEvent->motion.xrel));
-            EVSET(yRel, MK_NUMBER(sdlEvent->motion.yrel));
-            break;
-        }
-        case SDL_MOUSEBUTTONDOWN:
-        case SDL_MOUSEBUTTONUP:
-        {
-            EVKEY(button);
-            EVSET(timestamp, MK_NUMBER(sdlEvent->button.timestamp));
-            EVSET(windowId, MK_NUMBER(sdlEvent->button.windowID));
-            EVSET(which, MK_NUMBER(sdlEvent->button.which));
-            EVSET(button, MK_NUMBER(sdlEvent->button.button));
-            EVSET(state, MK_NUMBER(sdlEvent->button.state));
-            EVSET(clicks, MK_NUMBER(sdlEvent->button.clicks));
-            EVSET(x, MK_NUMBER(sdlEvent->button.x));
-            EVSET(y, MK_NUMBER(sdlEvent->button.y));
-            break;
-        }
-        case SDL_MOUSEWHEEL:
-        {
-            break;
-        }
-        case SDL_FINGERDOWN:
-        case SDL_FINGERUP:
-        {
-            break;
-        }
-        case SDL_FINGERMOTION:
-        {
-            break;
-        }
-        case SDL_JOYAXISMOTION:
-        {
-            EVKEY(jaxis);
-            EVSET(timestamp, MK_NUMBER(sdlEvent->jaxis.timestamp));
-            EVSET(which, MK_NUMBER(sdlEvent->jaxis.which));
-            EVSET(axis, MK_NUMBER(sdlEvent->jaxis.axis));
-            EVSET(value, MK_NUMBER(sdlEvent->jaxis.value));
-            break;
-        }
-        case SDL_JOYBALLMOTION:
-        {
-            EVKEY(jball);
-            EVSET(timestamp, MK_NUMBER(sdlEvent->jball.timestamp));
-            EVSET(which, MK_NUMBER(sdlEvent->jball.which));
-            EVSET(ball, MK_NUMBER(sdlEvent->jball.ball));
-            EVSET(xRel, MK_NUMBER(sdlEvent->jball.xrel));
-            EVSET(yRel, MK_NUMBER(sdlEvent->jball.yrel));
-            break;
-        }
-        case SDL_JOYHATMOTION:
-        {
-            EVKEY(jhat);
-            EVSET(timestamp, MK_NUMBER(sdlEvent->jhat.timestamp));
-            EVSET(which, MK_NUMBER(sdlEvent->jhat.which));
-            EVSET(hat, MK_NUMBER(sdlEvent->jhat.hat));
-            EVSET(value, MK_NUMBER(sdlEvent->jhat.value));
-            break;
-        }
-        case SDL_JOYBUTTONDOWN:
-        case SDL_JOYBUTTONUP:
-        {
-            EVKEY(jbutton);
-            EVSET(timestamp, MK_NUMBER(sdlEvent->jbutton.timestamp));
-            EVSET(which, MK_NUMBER(sdlEvent->jbutton.which));
-            EVSET(button, MK_NUMBER(sdlEvent->jbutton.button));
-            EVSET(state, MK_NUMBER(sdlEvent->jbutton.state));
-            break;
-        }
-        case SDL_JOYDEVICEADDED:
-        case SDL_JOYDEVICEREMOVED:
-        {
-            EVKEY(jdevice);
-            EVSET(timestamp, MK_NUMBER(sdlEvent->jdevice.timestamp));
-            EVSET(which, MK_NUMBER(sdlEvent->jdevice.which));
-            break;
-        }
-    }
-}
-
-// SDL_AddEventWatch
-// SDL_DelEventWatch
-// SDL_EventState
-// SDL_FilterEvents
-// SDL_FlushEvent
-// SDL_FlushEvents
-// SDL_GetEventFilter
-// SDL_GetEventState
-// SDL_GetNumTouchDevices
-// SDL_GetNumTouchFingers
-// SDL_GetTouchDevice
-// SDL_GetTouchFinger
-// SDL_HasEvent
-// SDL_HasEvents
-// SDL_LoadDollarTemplates
-// SDL_PeepEvents
-
-METHOD(PollEvent) {
-    BEGIN();
-
-    NARGS(1);
-    OBJECTARG(evt, 0);
-
-    SDL_Event sdlEvent;
-    if (SDL_PollEvent(&sdlEvent)) {
-        populateEvent(isolate, evt, &sdlEvent);
-        RETURN(MK_TRUE());
-    } else {
-        RETURN(MK_FALSE());
-    }
-}
-
-METHOD(PumpEvents) {
-    SDL_PumpEvents();
-}
-
-// SDL_PushEvent
-
-METHOD(QuitRequested) {
-    BEGIN();
-    RETURN(MK_BOOL(SDL_QuitRequested()));
-}
-
-// SDL_RecordGesture
-// SDL_RegisterEvents
-// SDL_SaveAllDollarTemplates
-// SDL_SaveDollarTemplate
-// SDL_SetEventFilter
-
-METHOD(WaitEvent) {
-    BEGIN();
-
-    NARGS2(1, 2);
-    OBJECTARG(evt, 0);
-
-    SDL_Event sdlEvent;
-    if (args.Length() == 2) {
-        INTARG(timeout, 1);
-        int res = SDL_WaitEventTimeout(&sdlEvent, timeout);
-        if (res) {
-            populateEvent(isolate, evt, &sdlEvent);
-            RETURN(MK_TRUE());
-        } else {
-            RETURN(MK_FALSE());
-        }
-    } else {
-        SDL_WaitEvent(&sdlEvent);   
-        populateEvent(isolate, evt, &sdlEvent);
-    }
-}
+#include "events.cc"
 
 //
 //
@@ -1220,6 +991,17 @@ METHOD(ImageLoad) {
 }
 
 //
+// Screensaver
+
+
+
+//
+// Video
+
+
+
+
+//
 //
 
 void SDL2ModuleInit(Local<Object> exports) {
@@ -1230,22 +1012,19 @@ void SDL2ModuleInit(Local<Object> exports) {
     #undef DEFSYM
 
     initConstants(exports);
+    initGL(exports);
 
     Window::Init(isolate);
     Surface::Init(isolate);
     Renderer::Init(isolate);
     Texture::Init(isolate);
+    Context2D::Init(isolate);
+    GLContext::Init(isolate);
 
     NODE_SET_METHOD(exports, "init", Init);
-    NODE_SET_METHOD(exports, "createWindow", CreateWindow);
-    NODE_SET_METHOD(exports, "destroyWindow", DestroyWindow);
-    NODE_SET_METHOD(exports, "setWindowSize", SetWindowSize);
 
-    // Events
-    NODE_SET_METHOD(exports, "pollEvent", PollEvent);
-    NODE_SET_METHOD(exports, "pumpEvents", PumpEvents);
-    NODE_SET_METHOD(exports, "quitRequested", QuitRequested);
-    NODE_SET_METHOD(exports, "waitEvent", WaitEvent);
+    initEvents(exports);
+    initDisplay(exports);
 
     // Josticks
     NODE_SET_METHOD(exports, "joystickClose", JoystickClose);
