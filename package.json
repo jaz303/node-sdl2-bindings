@@ -1,0 +1,21 @@
+{
+  "name": "sdl-test",
+  "version": "0.0.1",
+  "description": "SDL + Cairo",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "install": "node-gyp rebuild"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jaz303/node-sdl.git"
+  },
+  "author": "Jason Frame <jason@onehackoranother.com> (http://jasonframe.co.uk)",
+  "license": "MIT",
+  "gypfile": true,
+  "bugs": {
+    "url": "https://github.com/jaz303/node-sdl/issues"
+  },
+  "homepage": "https://github.com/jaz303/node-sdl#readme"
+}
