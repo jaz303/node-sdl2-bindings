@@ -1,21 +1,3 @@
-// TODO: GL stuff...
-// SDL_GL_CreateContext
-// SDL_GL_DeleteContext
-// SDL_GL_ExtensionSupported
-// SDL_GL_GetAttribute
-// SDL_GL_GetCurrentContext
-// SDL_GL_GetCurrentWindow
-// SDL_GL_GetDrawableSize
-// SDL_GL_GetProcAddress
-// SDL_GL_GetSwapInterval
-// SDL_GL_LoadLibrary
-// SDL_GL_MakeCurrent
-// SDL_GL_ResetAttributes
-// SDL_GL_SetAttribute
-// SDL_GL_SetSwapInterval
-// SDL_GL_SwapWindow
-// SDL_GL_UnloadLibrary
-
 // TODO: SDL_GetWindowFromID - need internal map of ID => window object
 // Might be easiest to implement the above in Javascript using a WeakMap?
 // TODO: SDL_SetWindowHitTest - laziness

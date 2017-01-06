@@ -1,12 +1,23 @@
-// SDL_GL_ExtensionSupported
-// SDL_GL_GetCurrentContext
-// SDL_GL_GetCurrentWindow
-// SDL_GL_GetDrawableSize
-// SDL_GL_GetProcAddress
-// SDL_GL_GetSwapInterval
-// SDL_GL_LoadLibrary
-// SDL_GL_SetSwapInterval
-// SDL_GL_UnloadLibrary
+// TODO: SDL_GL_ExtensionSupported
+// TODO: SDL_GL_GetCurrentContext
+// TODO: SDL_GL_GetCurrentWindow
+// TODO: SDL_GL_GetDrawableSize
+// TODO: SDL_GL_GetProcAddress
+// TODO: SDL_GL_GetSwapInterval
+// TODO: SDL_GL_LoadLibrary
+// TODO: SDL_GL_SetSwapInterval
+// TODO: SDL_GL_UnloadLibrary
+
+METHOD(GLCreateContext) {
+    BEGIN();
+    UNWRAP(window, Window, args[0]);
+    auto ctx = SDL_GL_CreateContext(window->window_);
+    if (ctx == nullptr) {
+        THROW_SDL_ERROR();
+    } else {
+        RETURN(GLContext::NewInstance(isolate, ctx));
+    }
+}
 
 METHOD(GLGetAttribute) {
     BEGIN();
@@ -50,6 +61,7 @@ void initGL(Local<Object> exports) {
     auto gl = MK_OBJECT();
     auto ctx = isolate->GetCurrentContext();
     exports->CreateDataProperty(ctx, SYM(gl), gl);
+    NODE_SET_METHOD(gl, "createContext", GLCreateContext);
     NODE_SET_METHOD(gl, "getAttribute", GLGetAttribute);
     NODE_SET_METHOD(gl, "setAttribute", GLSetAttribute);
     NODE_SET_METHOD(gl, "resetAttributes", GLResetAttributes);
