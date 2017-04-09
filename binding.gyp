@@ -3,11 +3,27 @@
 		{
 			"target_name": "sdl",
 			"sources": [
+				"src/constants.cc",
+				"src/helpers.cc",
 				"src/sdl.cc",
-				"src/constants.cc"
+				"src/symbols.cc",
+
+				"src/functions/core.cc",
+				"src/functions/display_window.cc",
+				"src/functions/events.cc",
+				"src/functions/ext_image.cc",
+				"src/functions/gl.cc",
+				"src/functions/joystick.cc",
+				"src/functions/pixel_format_conversion.cc",
+				"src/functions/surface_drawing.cc",
+
+				"src/objects/gl_context.cc",
+				"src/objects/joystick.cc",
+				"src/objects/surface.cc",
+				"src/objects/window.cc"
 			],
 			"include_dirs": [
-				"src",
+				"include",
 				"/usr/local/include"
 			],
 			"link_settings": {
@@ -15,7 +31,6 @@
 					"-lSDL2",
 					"-lSDL2_gfx",
 					"-lSDL2_image",
-					"-lcairo",
 					"-L/usr/local/lib",
 					"-Wl,-rpath,/usr/local/lib"
 				]

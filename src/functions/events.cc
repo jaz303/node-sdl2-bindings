@@ -1,9 +1,26 @@
+#include <iostream>
+#include "deps.h"
+
+// TODO: SDL_AddEventWatch
+// TODO: SDL_DelEventWatch
+// TODO: SDL_FilterEvents
+// TODO: SDL_GetEventFilter
+// TODO: SDL_GetTouchDevice
+// TODO: SDL_GetTouchFinger
+// TODO: SDL_PeepEvents
+// TODO: SDL_PushEvent
+// TODO: SDL_SetEventFilter
+
+namespace sdl2_bindings {
+
+using namespace v8;
+
 #define EVKEY(name) \
     Local<Object> evinfo = Object::New(isolate); \
-    evt->CreateDataProperty(ctx, SYM(name), evinfo)
+    ((void)evt->CreateDataProperty(ctx, SYM(name), evinfo))
 
 #define EVSET(key, value) \
-    evinfo->CreateDataProperty(ctx, SYM(key), value)
+    ((void)evinfo->CreateDataProperty(ctx, SYM(key), value))
 
 void populateEvent(Isolate *isolate, Local<Object> evt, SDL_Event *sdlEvent) {
     auto ctx = isolate->GetCurrentContext();
@@ -198,40 +215,29 @@ void populateEvent(Isolate *isolate, Local<Object> evt, SDL_Event *sdlEvent) {
     }
 }
 
-// SDL_AddEventWatch
-// SDL_DelEventWatch
-
 METHOD(EventState) {
     BEGIN();
-    NARGS(2);
     UINT32ARG(type, 0);
     INTARG(state, 1);
     auto res = SDL_EventState(type, state);
     RETURN(MK_NUMBER(res));
 }
 
-// SDL_FilterEvents
-
 METHOD(FlushEvent) {
     BEGIN();
-    NARGS(1);
     UINT32ARG(type, 0);
     SDL_FlushEvent(type);
 }
 
 METHOD(FlushEvents) {
     BEGIN();
-    NARGS(2);
     UINT32ARG(minType, 0);
     UINT32ARG(maxType, 1);
     SDL_FlushEvents(minType, maxType);
 }
 
-// SDL_GetEventFilter
-
 METHOD(GetEventState) {
     BEGIN();
-    NARGS(1);
     UINT32ARG(type, 0);
     auto res = SDL_GetEventState(type);
     RETURN(MK_NUMBER(res));
@@ -244,24 +250,18 @@ METHOD(GetNumTouchDevices) {
 
 METHOD(GetNumTouchFingers) {
     BEGIN();
-    NARGS(1);
     INTARG(touchId, 0);
     RETURN(MK_NUMBER(SDL_GetNumTouchFingers(touchId)));
 }
 
-// SDL_GetTouchDevice
-// SDL_GetTouchFinger
-
 METHOD(HasEvent) {
     BEGIN();
-    NARGS(1);
     UINT32ARG(type, 0);
     RETURN(MK_BOOL(SDL_HasEvent(type) == SDL_TRUE));
 }
 
 METHOD(HasEvents) {
     BEGIN();
-    NARGS(2);
     UINT32ARG(minType, 0);
     UINT32ARG(maxType, 1);
     RETURN(MK_BOOL(SDL_HasEvents(minType, maxType) == SDL_TRUE));
@@ -270,7 +270,6 @@ METHOD(HasEvents) {
 // TODO: should support a file pointer as well as filename
 METHOD(LoadDollarTemplates) {
     BEGIN();
-    NARGS(2);
     INTARG(touchId, 0);
     STRINGARG(src, 1);
     auto ops = SDL_RWFromFile(*src, "rb");
@@ -285,14 +284,9 @@ METHOD(LoadDollarTemplates) {
     RETURN(MK_NUMBER(res));
 }
 
-// SDL_PeepEvents
-
 METHOD(PollEvent) {
     BEGIN();
-
-    NARGS(1);
     OBJECTARG(evt, 0);
-
     SDL_Event sdlEvent;
     if (SDL_PollEvent(&sdlEvent)) {
         populateEvent(isolate, evt, &sdlEvent);
@@ -306,8 +300,6 @@ METHOD(PumpEvents) {
     SDL_PumpEvents();
 }
 
-// SDL_PushEvent
-
 METHOD(QuitRequested) {
     BEGIN();
     RETURN(MK_BOOL(SDL_QuitRequested()));
@@ -315,7 +307,6 @@ METHOD(QuitRequested) {
 
 METHOD(RecordGesture) {
     BEGIN();
-    NARGS(1);
     INTARG(touchId, 0);
     auto res = SDL_RecordGesture(touchId);
     if (res == 0) {
@@ -325,7 +316,6 @@ METHOD(RecordGesture) {
 
 METHOD(RegisterEvents) {
     BEGIN();
-    NARGS(1);
     INTARG(numEvents, 0);
     auto res = SDL_RegisterEvents(numEvents);
     RETURN(MK_NUMBER(res));
@@ -333,7 +323,6 @@ METHOD(RegisterEvents) {
 
 METHOD(SaveAllDollarTemplates) {
     BEGIN();
-    NARGS(1);
     STRINGARG(dst, 0);
     auto ops = SDL_RWFromFile(*dst, "wb");
     if (ops == NULL) {
@@ -349,7 +338,6 @@ METHOD(SaveAllDollarTemplates) {
 
 METHOD(SaveDollarTemplate) {
     BEGIN();
-    NARGS(2);
     INTARG(gestureId, 0);
     STRINGARG(dst, 0);
     auto ops = SDL_RWFromFile(*dst, "wb");
@@ -363,31 +351,29 @@ METHOD(SaveDollarTemplate) {
     }
 }
 
-// SDL_SetEventFilter
-
 METHOD(WaitEvent) {
     BEGIN();
-
-    NARGS2(1, 2);
     OBJECTARG(evt, 0);
-
     SDL_Event sdlEvent;
-    if (args.Length() == 2) {
-        INTARG(timeout, 1);
-        int res = SDL_WaitEventTimeout(&sdlEvent, timeout);
-        if (res) {
-            populateEvent(isolate, evt, &sdlEvent);
-            RETURN(MK_TRUE());
-        } else {
-            RETURN(MK_FALSE());
-        }
-    } else {
-        SDL_WaitEvent(&sdlEvent);   
+    SDL_WaitEvent(&sdlEvent);   
+    populateEvent(isolate, evt, &sdlEvent);
+}
+
+METHOD(WaitEventTimeout) {
+    BEGIN();
+    OBJECTARG(evt, 0);
+    INTARG(timeout, 1);
+    SDL_Event sdlEvent;
+    int res = SDL_WaitEventTimeout(&sdlEvent, timeout);
+    if (res) {
         populateEvent(isolate, evt, &sdlEvent);
+        RETURN(MK_TRUE());
+    } else {
+        RETURN(MK_FALSE());
     }
 }
 
-void initEvents(Local<Object> exports) {
+void InitEventFunctions(Local<Object> exports) {
     NODE_SET_METHOD(exports, "eventState", EventState);
     NODE_SET_METHOD(exports, "flushEvent", FlushEvent);
     NODE_SET_METHOD(exports, "flushEvents", FlushEvents);
@@ -404,4 +390,7 @@ void initEvents(Local<Object> exports) {
     NODE_SET_METHOD(exports, "registerEvents", RegisterEvents);
     NODE_SET_METHOD(exports, "saveAllDollarTemplates", SaveAllDollarTemplates);
     NODE_SET_METHOD(exports, "waitEvent", WaitEvent);
+    NODE_SET_METHOD(exports, "waitEventTimeout", WaitEventTimeout);
+}
+
 }

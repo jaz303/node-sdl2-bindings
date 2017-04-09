@@ -56,6 +56,7 @@
 #define MK_BOOL(val) v8::Boolean::New(isolate, (val))
 #define MK_TRUE() v8::True(isolate)
 #define MK_FALSE() v8::False(isolate)
+#define MK_NULL() v8::Null(isolate)
 #define MK_OBJECT() v8::Object::New(isolate)
 
 #define UNWRAP(name, type, from) \
@@ -64,53 +65,32 @@
 #define UNWRAP_ME(name, type) \
     type *name = node::ObjectWrap::Unwrap<type>(args.This())
 
-#define NARGS(n) \
-    if (args.Length() != n) { \
-        THROW(TypeError, "argument error"); \
-    }
-
-#define NARGS2(min, max) \
-    if (args.Length() < min || args.Length() > max) { \
-        THROW(TypeError, "argument error"); \
-    }
-
-#define ARG(vartype, name, ix, typecheck, cast) \
-    if (!args[ix]->typecheck()) { \
-        THROW(TypeError, "argument error"); \
-    } \
+#define ARG(vartype, name, ix, cast) \
     vartype name = args[ix]->cast()
 
 #define OBJECTARG(name, ix) \
-    if (!args[ix]->IsObject()) { \
-        THROW(TypeError, "argument error"); \
-    } \
     Local<Object> name = args[ix]->ToObject()
 
 #define ARRAYARG(name, ix) \
-    if (!args[ix]->IsObject()) { \
-        THROW(TypeError, "argument error"); \
-    } \
     Local<Array> name = Local<Array>::Cast(args[ix])
 
 #define STRINGARG(name, ix) \
-    if (!args[ix]->IsString()) { \
-        THROW(TypeError, "argument error"); \
-    } \
     String::Utf8Value name(args[ix])
 
 #define DOUBLEARG(name, ix) \
-    ARG(double, name, ix, IsNumber, NumberValue)
+    ARG(double, name, ix, NumberValue)
 
 #define INTARG(name, ix) \
-    ARG(int, name, ix, IsNumber, Int32Value)
+    ARG(int, name, ix, Int32Value)
 
 #define UINT32ARG(name, ix) \
-    ARG(uint32_t, name, ix, IsNumber, Uint32Value)
+    ARG(uint32_t, name, ix, Uint32Value)
 
 #define RETURN(val) args.GetReturnValue().Set(val)
+#define RETURN_INT(val) RETURN(MK_NUMBER(val))
 #define RETURN_BOOL(val) RETURN(MK_BOOL(val))
 #define RETURN_TRUE() RETURN(MK_TRUE())
 #define RETURN_FALSE() RETURN(MK_FALSE())
 
 #define GET_CONTEXT() auto ctx = isolate->GetCurrentContext()
-#define SET_KEY(obj, key, val) obj->CreateDataProperty(ctx, key, val)
+#define SET_KEY(obj, key, val) ((void)obj->CreateDataProperty(ctx, key, val))

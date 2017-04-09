@@ -1,9 +1,9 @@
 const S = process.stdout;
 
 S.write('#include "deps.h"\n\n');
-S.write('namespace nsdl {\n\n');
+S.write('namespace sdl2_bindings {\n\n');
 S.write('using namespace v8;\n');
-S.write('void initConstants(Local<Object> exports) {\n');
+S.write('void InitConstants(Local<Object> exports) {\n');
 S.write('    auto isolate = exports->GetIsolate();\n');
 S.write('    auto attrs = static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontDelete);\n');
 S.write('    auto ctx = isolate->GetCurrentContext();\n');
@@ -928,6 +928,6 @@ function writeConstants(spec) {
 	spec.values.forEach((n) => {
 		const name = spec.filter(n);
 		const val = spec.template(n);
-		S.write(`    exports->DefineOwnProperty(ctx, v8::String::NewFromUtf8(isolate, "${name}"), ${val}, attrs);\n`);
+		S.write(`    ((void)exports->DefineOwnProperty(ctx, v8::String::NewFromUtf8(isolate, "${name}"), ${val}, attrs));\n`);
 	});
 }
