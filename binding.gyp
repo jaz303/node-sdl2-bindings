@@ -29,7 +29,6 @@
 			"link_settings": {
 				"libraries": [
 					"-lSDL2",
-					"-lSDL2_gfx",
 					"-lSDL2_image",
 					"-L/usr/local/lib",
 					"-Wl,-rpath,/usr/local/lib"
