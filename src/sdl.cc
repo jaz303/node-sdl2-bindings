@@ -18,6 +18,7 @@ void SDL2BindingsInit(Local<Object> exports) {
 	InitSurfaceDrawingFunctions(exports);
 
 	GLContext::Init(exports->GetIsolate());
+	Joystick::Init(exports->GetIsolate());
 	Surface::Init(exports->GetIsolate());
 	Window::Init(exports->GetIsolate());
 }
