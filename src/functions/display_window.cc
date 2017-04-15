@@ -59,10 +59,10 @@ METHOD(GetWindowFlags) {
     RETURN(MK_NUMBER(SDL_GetWindowFlags(self->window_)));
 }
 
-// METHOD(Window::Update) {
-//     UNWRAP_ME(w, Window);
-//     SDL_UpdateWindowSurface(w->window_);
-// }
+METHOD(UpdateWindowSurface) {
+    UNWRAP(self, Window, args[0]);
+    SDL_UpdateWindowSurface(self->window_);
+}
 
 // METHOD(Window::UpdateRects) {
 //     BEGIN();
@@ -377,6 +377,8 @@ void InitDisplayWindowFunctions(Local<Object> exports) {
     NODE_SET_METHOD(exports, "getWindowSurface", GetWindowSurface);
     NODE_SET_METHOD(exports, "getWindowDisplayIndex", GetWindowDisplayIndex);
     NODE_SET_METHOD(exports, "getWindowFlags", GetWindowFlags);
+
+    NODE_SET_METHOD(exports, "updateWindowSurface", UpdateWindowSurface);
 
     NODE_SET_METHOD(exports, "getWindowBrightness", GetWindowBrightness);
     NODE_SET_METHOD(exports, "setWindowBrightness", SetWindowBrightness);
