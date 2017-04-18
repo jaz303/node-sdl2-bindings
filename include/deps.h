@@ -16,6 +16,9 @@ namespace sdl2_bindings {
 
 namespace sdl2_bindings {
 	void extractRect(Isolate *isolate, Local<Object> obj, SDL_Rect *rect);
+	void populateRect(Isolate *isolate, Local<Object> obj, SDL_Rect *rect);
+	void extractDisplayMode(Isolate *isolate, Local<Object> obj, SDL_DisplayMode *dm);
+	void populateDisplayMode(Isolate *isolate, Local<Object> obj, SDL_DisplayMode *dm);
 
 	void InitSymbols(v8::Isolate *isolate);
 	void InitConstants(v8::Local<v8::Object> exports);
