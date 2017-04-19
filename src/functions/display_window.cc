@@ -478,7 +478,7 @@ METHOD(VideoQuit) {
     SDL_VideoQuit();
 }
 
-#ifdef SDL_GE_2_0_5
+#if SDL_VERSION_ATLEAST(2, 0, 5)
 
 METHOD(GetWindowBordersSize) {
     BEGIN();
@@ -594,8 +594,8 @@ void InitDisplayWindowFunctions(Local<Object> exports) {
     NODE_SET_METHOD(exports, "videoInit", VideoInit);
     NODE_SET_METHOD(exports, "videoQuit", VideoQuit);
 
-#ifdef SDL_GE_2_0_5
-    NODE_SET_METHOD(exports, "getWindowBordersSize", GetWindowBordersSize)
+#if SDL_VERSION_ATLEAST(2, 0, 5)
+    NODE_SET_METHOD(exports, "getWindowBordersSize", GetWindowBordersSize);
     NODE_SET_METHOD(exports, "setWindowResizable", SetWindowResizable);
     NODE_SET_METHOD(exports, "getWindowOpacity", GetWindowOpacity);
     NODE_SET_METHOD(exports, "setWindowOpacity", SetWindowOpacity);

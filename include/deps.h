@@ -22,9 +22,12 @@ namespace sdl2_bindings {
 
 	void InitSymbols(v8::Isolate *isolate);
 	void InitConstants(v8::Local<v8::Object> exports);
-	
+
+	void InitClipboardFunctions(v8::Local<v8::Object> exports);
 	void InitCoreFunctions(v8::Local<v8::Object> exports);
+	void InitCPUFeatureDetectionFunctions(Local<Object> exports);
 	void InitDisplayWindowFunctions(Local<Object> exports);
+	void InitErrorFunctions(Local<Object> exports);
 	void InitEventFunctions(v8::Local<v8::Object> exports);
 	void InitExtImageFunctions(v8::Local<v8::Object> exports);
 	void InitGLFunctions(v8::Local<v8::Object> exports);
@@ -32,4 +35,5 @@ namespace sdl2_bindings {
 	void InitMouseFunctions(v8::Local<v8::Object> exports);
 	void InitPixelFormatConversionFunctions(v8::Local<v8::Object> exports);
 	void InitSurfaceDrawingFunctions(v8::Local<v8::Object> exports);
+	void InitTimerFunctions(v8::Local<v8::Object> exports);
 }

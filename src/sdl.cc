@@ -8,8 +8,11 @@ void SDL2BindingsInit(Local<Object> exports) {
 	InitSymbols(exports->GetIsolate());
 	InitConstants(exports);
 
+	InitClipboardFunctions(exports);
 	InitCoreFunctions(exports);
+	InitCPUFeatureDetectionFunctions(exports);
 	InitDisplayWindowFunctions(exports);
+	InitErrorFunctions(exports);
 	InitEventFunctions(exports);
 	InitExtImageFunctions(exports);
 	InitGLFunctions(exports);
@@ -17,6 +20,7 @@ void SDL2BindingsInit(Local<Object> exports) {
 	InitMouseFunctions(exports);
 	InitPixelFormatConversionFunctions(exports);
 	InitSurfaceDrawingFunctions(exports);
+	InitTimerFunctions(exports);
 
 	GLContext::Init(exports->GetIsolate());
 	Joystick::Init(exports->GetIsolate());
