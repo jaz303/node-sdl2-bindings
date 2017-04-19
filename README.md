@@ -1,20 +1,19 @@
-# luxor
+# sdl2-bindings
 
-Luxor is a node module wrapping SDL, OpenGL(ES) and Cairo. It's a bit of a behemoth.
+SDL2 bindings for node.js v7+.
 
-## Notes
-
-### Joysticks
-
-To avoid maintaining an internal map of joystick instance ID to `SDL_Joystick*`, `joystickOpen(index)` currently returns a joystick instance ID rather than a wrapped pointer. This may change in future versions, and as such, the value returned from `joystickOpen()` should be treated as opaque.
-
-### SDL_Image
-
-Only implemented functions are `IMG_Init()`, `IMG_Quit()` and `IMG_Load()`.
+The bindings implemented by this library are pretty "raw"; little-to-no argument juggling is performed, and there are no optional arguments. I will document this more later.
 
 ## Things that are still to be implemented
 
-For a list of outstanding stuff, run `make todo`.
+  - Hints
+  - Mouse
+  - Keyboard
+  - Game controller
+  - 2D accelerated rendering
+  - Pixel formats
+  - Finish off surface handling
+  - Figure out strategy for audio
 
 ## Things that won't be implemented
   
@@ -22,5 +21,5 @@ For a list of outstanding stuff, run `make todo`.
   - Threads - not applicable to node
   - Timers - use `setTimeout()`, `setInterval()`
   - File Abstraction - use `fs` package, streams etc.
-  - Rectangle Functions - implement your own rectangle class or import one of the many on npm. Use objects with keys `x`, `y`, `width` and `height.
+  - Rectangle Functions - implement your own rectangle class or import one of the many on npm. Use objects with keys `x`, `y`, `width` and `height`.
   - Shared Object Support
