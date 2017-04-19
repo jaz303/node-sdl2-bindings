@@ -1,5 +1,12 @@
 #include "deps.h"
 
+// Not implemented:
+// SDL_JoystickFromInstanceID - implemented in JS?
+
+// Changes from SDL API:
+// joystickGetDeviceGUID, joystickGetGUID
+// These functions return a string rather than an array of bytes
+
 namespace sdl2_bindings {
 
 using namespace v8;
@@ -24,10 +31,6 @@ METHOD(JoystickEventState) {
     INTARG(state, 0);
     RETURN(MK_BOOL(SDL_JoystickEventState(state))); 
 }
-
-// METHOD(JoystickFromInstanceID) {
-//  // TODO
-// }
 
 METHOD(JoystickGetAttached) {
     BEGIN();
@@ -56,24 +59,36 @@ METHOD(JoystickGetButton) {
     RETURN(MK_NUMBER(SDL_JoystickGetButton(js->joystick_, button)));
 }
 
-// METHOD(JoystickGetDeviceGUID) {
-//  BEGIN();
-//  NARGS(1);
-//  INTARG(deviceIndex, 0);
-//  RETURN(MK_NUMBER(SDL_JoystickGetDeviceGUID(deviceIndex)));  
-// }
+void getGUID(const FunctionCallbackInfo<Value>& args, Isolate *isolate, SDL_JoystickGUID *guid) {
+    bool zero = true;
+    for (int i = 0; i < 16; ++i) {
+        if (guid->data[i] != 0) {
+            zero = false;
+            break;
+        }
+    }
+    if (zero) {
+        THROW_SDL_ERROR();
+    } else {
+        char buffer[33];
+        SDL_JoystickGetGUIDString(*guid, buffer, 33);
+        RETURN(MK_STRING(buffer));
+    }
+}
 
-// METHOD(JoystickGetGUID) {
-//  // TODO
-// }
+METHOD(JoystickGetGUID) {
+    BEGIN();
+    EXTRACT_JOYSTICK(0);
+    auto guid = SDL_JoystickGetGUID(js->joystick_);
+    getGUID(args, isolate, &guid);
+}
 
-// METHOD(JoystickGetGUIDFromString) {
-//  // TODO
-// }
-
-// METHOD(JoystickGetGUIDString) {
-//  // TODO
-// }
+METHOD(JoystickGetDeviceGUID) {
+    BEGIN();
+    INTARG(deviceIndex, 0);
+    auto guid = SDL_JoystickGetDeviceGUID(deviceIndex);
+    getGUID(args, isolate, &guid);
+}
 
 METHOD(JoystickGetHat) {
     BEGIN();
@@ -147,15 +162,12 @@ void InitJoystickFunctions(Local<Object> exports) {
     NODE_SET_METHOD(exports, "joystickClose", JoystickClose);
     NODE_SET_METHOD(exports, "joystickCurrentPowerLevel", JoystickCurrentPowerLevel);
     NODE_SET_METHOD(exports, "joystickEventState", JoystickEventState);
-    // NODE_SET_METHOD(exports, "joystickFromInstanceID", JoystickFromInstanceID);
     NODE_SET_METHOD(exports, "joystickGetAttached", JoystickGetAttached);
     NODE_SET_METHOD(exports, "joystickGetAxis", JoystickGetAxis);
     NODE_SET_METHOD(exports, "joystickGetBall", JoystickGetBall);
     NODE_SET_METHOD(exports, "joystickGetButton", JoystickGetButton);
-    // NODE_SET_METHOD(exports, "joystickGetDeviceGUID", JoystickGetDeviceGUID);
-    // NODE_SET_METHOD(exports, "joystickGetGUID", JoystickGetGUID);
-    // NODE_SET_METHOD(exports, "joystickGetGUIDFromString", JoystickGetGUIDFromString);
-    // NODE_SET_METHOD(exports, "joystickGetGUIDString", JoystickGetGUIDString);
+    NODE_SET_METHOD(exports, "joystickGetDeviceGUID", JoystickGetDeviceGUID);
+    NODE_SET_METHOD(exports, "joystickGetGUID", JoystickGetGUID);
     NODE_SET_METHOD(exports, "joystickGetHat", JoystickGetHat);
     NODE_SET_METHOD(exports, "joystickInstanceID", JoystickInstanceID);
     NODE_SET_METHOD(exports, "joystickName", JoystickName);
