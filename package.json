@@ -1,7 +1,7 @@
 {
-  "name": "sdl-test",
+  "name": "sdl2-bindings",
   "version": "0.0.1",
-  "description": "SDL + Cairo",
+  "description": "SDL2 bindings, compatible with node v7+",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -9,13 +9,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jaz303/node-sdl.git"
+    "url": "git+https://github.com/jaz303/node-sdl2-bindings.git"
   },
   "author": "Jason Frame <jason@onehackoranother.com> (http://jasonframe.co.uk)",
   "license": "MIT",
   "gypfile": true,
   "bugs": {
-    "url": "https://github.com/jaz303/node-sdl/issues"
+    "url": "https://github.com/jaz303/node-sdl2-bindings/issues"
   },
-  "homepage": "https://github.com/jaz303/node-sdl#readme"
+  "homepage": "https://github.com/jaz303/node-sdl2-bindings#readme"
 }
