@@ -22,6 +22,7 @@
 				"src/functions/surface_drawing.cc",
 				"src/functions/timers.cc",
 
+				"src/objects/cursor.cc",
 				"src/objects/gl_context.cc",
 				"src/objects/joystick.cc",
 				"src/objects/surface.cc",

@@ -74,11 +74,17 @@
 #define ARRAYARG(name, ix) \
     Local<Array> name = Local<Array>::Cast(args[ix])
 
+#define CASTARG(name, type, ix) \
+    Local<type> name = Local<type>::Cast(args[ix])
+
 #define STRINGARG(name, ix) \
     String::Utf8Value name(args[ix])
 
 #define DOUBLEARG(name, ix) \
     ARG(double, name, ix, NumberValue)
+
+#define BOOLARG(name, ix) \
+    ARG(bool, name, ix, BooleanValue)
 
 #define INTARG(name, ix) \
     ARG(int, name, ix, Int32Value)

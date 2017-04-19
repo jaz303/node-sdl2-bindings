@@ -5,6 +5,28 @@ namespace sdl2_bindings {
 
 using namespace v8;
 
+class Cursor : public node::ObjectWrap {
+public:
+    static void Init(Isolate *isolate);
+    static Local<Object> NewInstance(Isolate *isolate, SDL_Cursor *cursor, bool userCreated);
+
+    static METHOD(New);
+
+    bool isUserCreated();
+    void destroy();
+    bool isDestroyed();
+
+    SDL_Cursor *cursor_;
+
+private:
+    static v8::Persistent<v8::Function> constructor;
+    Cursor(SDL_Cursor *cursor, bool userCreated);
+    ~Cursor();
+
+    bool userCreated_;
+    bool destroyed_;
+};
+
 class GLContext : public node::ObjectWrap {
 
 public:
