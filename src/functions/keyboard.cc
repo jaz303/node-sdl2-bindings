@@ -37,7 +37,7 @@ METHOD(GetKeyboardState) {
     const Uint8 *state  = SDL_GetKeyboardState(&len);
     Local<Array> out = Array::New(isolate, len);
     for (int ix = 0; ix < len; ++ix) {
-        out->Set(0, MK_BOOL(state[ix] == 1));
+        out->Set(ix, MK_BOOL(state[ix] == 1));
     }
     RETURN(out);
 }
@@ -48,7 +48,7 @@ METHOD(ReadKeyboardState) {
     int len;
     const Uint8 *state  = SDL_GetKeyboardState(&len);
     for (int ix = 0; ix < len; ++ix) {
-        target->Set(0, MK_BOOL(state[ix] == 1));
+        target->Set(ix, MK_BOOL(state[ix] == 1));
     }
 }
 
