@@ -2,6 +2,9 @@
 
 // TODO:
 // SDL_GetMouseFocus() - need a way to map window pointers to Window objects
+//
+// Play about with GetCursor/GetDefaultCursor - if they're stable we should 
+// introduce a Javascript shim to return the same instance.
 
 namespace sdl2_bindings {
 
