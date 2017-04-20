@@ -32,6 +32,7 @@ namespace sdl2_bindings {
 	void InitExtImageFunctions(v8::Local<v8::Object> exports);
 	void InitGLFunctions(v8::Local<v8::Object> exports);
 	void InitJoystickFunctions(v8::Local<v8::Object> exports);
+	void InitKeyboardFunctions(v8::Local<v8::Object> exports);
 	void InitMouseFunctions(v8::Local<v8::Object> exports);
 	void InitPixelFormatConversionFunctions(v8::Local<v8::Object> exports);
 	void InitSurfaceDrawingFunctions(v8::Local<v8::Object> exports);

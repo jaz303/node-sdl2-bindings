@@ -7,8 +7,6 @@ The bindings implemented by this library are pretty "raw"; little-to-no argument
 ## Things that are still to be implemented
 
   - Hints
-  - Mouse
-  - Keyboard
   - Game controller
   - 2D accelerated rendering
   - Pixel formats

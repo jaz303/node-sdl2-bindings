@@ -17,6 +17,7 @@ void SDL2BindingsInit(Local<Object> exports) {
 	InitExtImageFunctions(exports);
 	InitGLFunctions(exports);
 	InitJoystickFunctions(exports);
+	InitKeyboardFunctions(exports);
 	InitMouseFunctions(exports);
 	InitPixelFormatConversionFunctions(exports);
 	InitSurfaceDrawingFunctions(exports);

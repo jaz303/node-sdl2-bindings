@@ -17,6 +17,7 @@
 				"src/functions/ext_image.cc",
 				"src/functions/gl.cc",
 				"src/functions/joystick.cc",
+				"src/functions/keyboard.cc",
 				"src/functions/mouse.cc",
 				"src/functions/pixel_format_conversion.cc",
 				"src/functions/surface_drawing.cc",
