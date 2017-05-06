@@ -4,6 +4,10 @@ SDL2 bindings for node.js v7+.
 
 The bindings implemented by this library are pretty "raw"; little-to-no argument juggling is performed, and there are no optional arguments. I will document this more later.
 
+## Exceptions
+
+  - `createRGBSurface`, `createRGBSurfaceWithFormat`: no `flags` argument as it's obsolete. First argument should be `width`.
+
 ## Things that are still to be implemented
 
   - Hints
