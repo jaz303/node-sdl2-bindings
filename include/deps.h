@@ -23,6 +23,7 @@ namespace sdl2_bindings {
 	void InitSymbols(v8::Isolate *isolate);
 	void InitConstants(v8::Local<v8::Object> exports);
 
+	void Init2DAcceleratedRenderingFunctions(Local<Object> exports);
 	void InitClipboardFunctions(v8::Local<v8::Object> exports);
 	void InitCoreFunctions(v8::Local<v8::Object> exports);
 	void InitCPUFeatureDetectionFunctions(Local<Object> exports);
