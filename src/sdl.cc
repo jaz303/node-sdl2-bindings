@@ -16,6 +16,7 @@ void SDL2BindingsInit(Local<Object> exports) {
 	InitErrorFunctions(exports);
 	InitEventFunctions(exports);
 	InitExtImageFunctions(exports);
+	InitGameControllerFunctions(exports);
 	InitGLFunctions(exports);
 	InitJoystickFunctions(exports);
 	InitKeyboardFunctions(exports);
@@ -25,6 +26,7 @@ void SDL2BindingsInit(Local<Object> exports) {
 	InitTimerFunctions(exports);
 
 	Cursor::Init(exports->GetIsolate());
+	GameController::Init(exports->GetIsolate());
 	GLContext::Init(exports->GetIsolate());
 	Joystick::Init(exports->GetIsolate());
 	Surface::Init(exports->GetIsolate());

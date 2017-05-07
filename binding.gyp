@@ -16,6 +16,7 @@
 				"src/functions/errors.cc",
 				"src/functions/events.cc",
 				"src/functions/ext_image.cc",
+				"src/functions/game_controller.cc",
 				"src/functions/gl.cc",
 				"src/functions/joystick.cc",
 				"src/functions/keyboard.cc",
@@ -25,6 +26,7 @@
 				"src/functions/timers.cc",
 
 				"src/objects/cursor.cc",
+				"src/objects/game_controller.cc",
 				"src/objects/gl_context.cc",
 				"src/objects/joystick.cc",
 				"src/objects/surface.cc",

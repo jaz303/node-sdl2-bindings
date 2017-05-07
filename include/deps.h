@@ -31,6 +31,7 @@ namespace sdl2_bindings {
 	void InitErrorFunctions(Local<Object> exports);
 	void InitEventFunctions(v8::Local<v8::Object> exports);
 	void InitExtImageFunctions(v8::Local<v8::Object> exports);
+	void InitGameControllerFunctions(Local<Object> exports);
 	void InitGLFunctions(v8::Local<v8::Object> exports);
 	void InitJoystickFunctions(v8::Local<v8::Object> exports);
 	void InitKeyboardFunctions(v8::Local<v8::Object> exports);

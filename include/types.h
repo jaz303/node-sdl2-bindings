@@ -27,6 +27,27 @@ private:
     bool destroyed_;
 };
 
+class GameController : public node::ObjectWrap {
+
+public:
+    static void Init(Isolate *isolate);
+    static Local<Object> NewInstance(Isolate *isolate, SDL_GameController *gameController);
+
+    SDL_GameController *gameController_;
+
+    void close();
+    bool isClosed();
+    
+private:
+    static v8::Persistent<v8::Function> constructor;
+    GameController(SDL_GameController *gameController);
+    ~GameController();
+
+    bool closed_;
+
+    static METHOD(New);
+};
+
 class GLContext : public node::ObjectWrap {
 
 public:
