@@ -15,9 +15,6 @@
 
 // SDL_LockTexture
 // SDL_QueryTexture
-// SDL_RenderClear
-// SDL_RenderCopy
-// SDL_RenderCopyEx
 // SDL_RenderDrawLine
 // SDL_RenderDrawLines
 // SDL_RenderDrawPoint
@@ -32,7 +29,6 @@
 // SDL_RenderGetScale
 // SDL_RenderGetViewport
 // SDL_RenderIsClipEnabled
-// SDL_RenderPresent
 // SDL_RenderReadPixels
 // SDL_RenderSetClipRect
 // SDL_RenderSetIntegerScale
@@ -200,6 +196,98 @@ METHOD(GetTextureColorMod) {
     }
 }
 
+METHOD(RenderClear) {
+    BEGIN();
+    UNWRAP(renderer, Renderer, args[0]);
+    if (SDL_RenderClear(renderer->renderer_) < 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
+METHOD(RenderCopy) {
+    BEGIN();
+    UNWRAP(renderer, Renderer, args[0]);
+    UNWRAP(texture, Texture, args[1]);
+    SDL_Rect src, dest;
+    extractRect(isolate, args[2]->ToObject(), &src);
+    extractRect(isolate, args[3]->ToObject(), &dest);
+    if (SDL_RenderCopy(renderer->renderer_, texture->texture_, &src, &dest) < 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
+METHOD(RenderCopyCmp) {
+    BEGIN();
+    UNWRAP(renderer, Renderer, args[0]);
+    UNWRAP(texture, Texture, args[1]);
+	INTARG(sx, 2);
+	INTARG(sy, 3);
+	INTARG(sw, 4);
+	INTARG(sh, 5);
+	INTARG(dx, 6);
+	INTARG(dy, 7);
+	INTARG(dw, 8);
+	INTARG(dh, 9);
+	SDL_Rect src = { .x = sx, .y = sy, .w = sw, .h = sh };
+	SDL_Rect dest = { .x = dx, .y = dy, .w = dw, .h = dh };
+	if (SDL_RenderCopy(renderer->renderer_, texture->texture_, &src, &dest) < 0) {
+		THROW_SDL_ERROR();
+	}
+}
+
+METHOD(RenderCopyEx) {
+    BEGIN();
+    UNWRAP(renderer, Renderer, args[0]);
+    UNWRAP(texture, Texture, args[1]);
+    SDL_Rect src, dest;
+    extractRect(isolate, args[2]->ToObject(), &src);
+    extractRect(isolate, args[3]->ToObject(), &dest);
+    DOUBLEARG(angle, 4);
+    SDL_Point center;
+    SDL_Point *centerPtr = nullptr;
+    if (args[5]->IsObject()) {
+        extractPoint(isolate, args[5]->ToObject(), &center);
+        centerPtr = &center;
+    }
+    INTARG(flip, 6);
+    if (SDL_RenderCopyEx(renderer->renderer_, texture->texture_, &src, &dest, angle, centerPtr, (SDL_RendererFlip)flip) < 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
+METHOD(RenderCopyExCmp) {
+    BEGIN();
+    UNWRAP(renderer, Renderer, args[0]);
+    UNWRAP(texture, Texture, args[1]);
+	INTARG(sx, 2);
+	INTARG(sy, 3);
+	INTARG(sw, 4);
+	INTARG(sh, 5);
+	INTARG(dx, 6);
+	INTARG(dy, 7);
+	INTARG(dw, 8);
+	INTARG(dh, 9);
+	SDL_Rect src = { .x = sx, .y = sy, .w = sw, .h = sh };
+	SDL_Rect dest = { .x = dx, .y = dy, .w = dw, .h = dh };
+    DOUBLEARG(angle, 10);
+    SDL_Point center;
+    SDL_Point *centerPtr = nullptr;
+    if (args[11]->IsObject()) {
+        extractPoint(isolate, args[5]->ToObject(), &center);
+        centerPtr = &center;
+    }
+    INTARG(flip, 12);
+    if (SDL_RenderCopyEx(renderer->renderer_, texture->texture_, &src, &dest, angle, centerPtr, (SDL_RendererFlip)flip) < 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
+METHOD(RenderPresent) {
+    BEGIN();
+    UNWRAP(renderer, Renderer, args[0]);
+    SDL_RenderPresent(renderer->renderer_);
+}
+
 void Init2DAcceleratedRenderingFunctions(Local<Object> exports) {
     NODE_SET_METHOD(exports, "createRenderer", CreateRenderer);
     NODE_SET_METHOD(exports, "createSoftwareRenderer", CreateSoftwareRenderer);
@@ -214,6 +302,12 @@ void Init2DAcceleratedRenderingFunctions(Local<Object> exports) {
     NODE_SET_METHOD(exports, "getTextureAlphaMod", GetTextureAlphaMod);
     NODE_SET_METHOD(exports, "getTextureBlendMode", GetTextureBlendMode);
     NODE_SET_METHOD(exports, "getTextureColorMod", GetTextureColorMod);
+    NODE_SET_METHOD(exports, "renderClear", RenderClear);
+    NODE_SET_METHOD(exports, "renderCopy", RenderCopy);
+    NODE_SET_METHOD(exports, "renderCopyCmp", RenderCopyCmp);
+    NODE_SET_METHOD(exports, "renderCopyEx", RenderCopy);
+    NODE_SET_METHOD(exports, "renderCopyCmpEx", RenderCopyCmp);
+    NODE_SET_METHOD(exports, "renderPresent", RenderPresent);
 }
 
 }

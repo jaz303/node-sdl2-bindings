@@ -15,6 +15,7 @@ namespace sdl2_bindings {
 #include "types.h"
 
 namespace sdl2_bindings {
+	void extractPoint(Isolate *isolate, Local<Object> obj, SDL_Point *point);
 	void extractRect(Isolate *isolate, Local<Object> obj, SDL_Rect *rect);
 	void populateRect(Isolate *isolate, Local<Object> obj, SDL_Rect *rect);
 	void extractDisplayMode(Isolate *isolate, Local<Object> obj, SDL_DisplayMode *dm);

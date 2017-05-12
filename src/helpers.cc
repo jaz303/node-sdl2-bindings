@@ -4,6 +4,12 @@ namespace sdl2_bindings {
 
 using namespace v8;
 
+void extractPoint(Isolate *isolate, Local<Object> obj, SDL_Point *point) {
+    GET_CONTEXT();
+    point->x = obj->Get(ctx, SYM(x)).ToLocalChecked()->Int32Value();
+    point->y = obj->Get(ctx, SYM(y)).ToLocalChecked()->Int32Value();
+}
+
 void extractRect(Isolate *isolate, Local<Object> obj, SDL_Rect *rect) {
     GET_CONTEXT();
     rect->x = obj->Get(ctx, SYM(x)).ToLocalChecked()->Int32Value();
