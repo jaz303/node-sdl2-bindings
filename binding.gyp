@@ -29,7 +29,9 @@
 				"src/objects/game_controller.cc",
 				"src/objects/gl_context.cc",
 				"src/objects/joystick.cc",
+				"src/objects/renderer.cc",
 				"src/objects/surface.cc",
+				"src/objects/texture.cc",
 				"src/objects/window.cc"
 			],
 			"include_dirs": [

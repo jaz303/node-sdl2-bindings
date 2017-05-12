@@ -29,6 +29,7 @@ void SDL2BindingsInit(Local<Object> exports) {
 	GameController::Init(exports->GetIsolate());
 	GLContext::Init(exports->GetIsolate());
 	Joystick::Init(exports->GetIsolate());
+	Renderer::Init(exports->GetIsolate());
 	Surface::Init(exports->GetIsolate());
 	Window::Init(exports->GetIsolate());
 }

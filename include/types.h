@@ -90,6 +90,23 @@ private:
     static METHOD(New);
 };
 
+class Renderer : public node::ObjectWrap {
+public:
+    static void Init(Isolate *isolate);
+    static Local<Object> NewInstance(Isolate *isolate, SDL_Renderer *renderer);
+
+	SDL_Renderer *renderer_;
+
+	static METHOD(New);
+
+    void destroy();
+
+private:
+    static v8::Persistent<v8::Function> constructor;
+    Renderer(SDL_Renderer *renderer);
+    ~Renderer();
+};
+
 class Surface : public node::ObjectWrap {
 public:
     static void Init(Isolate *isolate);
@@ -111,6 +128,23 @@ private:
     ~Surface();
 
     bool owned_;
+};
+
+class Texture : public node::ObjectWrap {
+public:
+    static void Init(Isolate *isolate);
+    static Local<Object> NewInstance(Isolate *isolate, SDL_Texture *texture);
+
+	SDL_Texture *texture_;
+
+	static METHOD(New);
+
+    void destroy();
+
+private:
+    static v8::Persistent<v8::Function> constructor;
+    Texture(SDL_Texture *texture);
+    ~Texture();
 };
 
 class Window : public node::ObjectWrap {
