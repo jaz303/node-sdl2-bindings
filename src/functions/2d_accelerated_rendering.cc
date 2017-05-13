@@ -4,6 +4,8 @@
 // SDL_CreateWindowAndRenderer - just use two separate calls
 // SDL_GetRenderTarget - need to be able to map from SDL_Texture* to Texture
 // SDL_GetRenderer - need to stash renderer on window
+// SDL_LockTexture - need to decide best way to get data out
+// SDL_UpdateTexture - ditto
 
 // Caveats:
 // SDL_GL_BindTexture - doesn't return texw, texh
@@ -12,17 +14,7 @@
 // TODO:
 // SDL_GetRenderDriverInfo
 // SDL_GetRendererInfo
-
-// SDL_LockTexture
 // SDL_QueryTexture
-// SDL_RenderDrawLine
-// SDL_RenderDrawLines
-// SDL_RenderDrawPoint
-// SDL_RenderDrawPoints
-// SDL_RenderDrawRect
-// SDL_RenderDrawRects
-// SDL_RenderFillRect
-// SDL_RenderFillRects
 // SDL_RenderGetClipRect
 // SDL_RenderGetIntegerScale
 // SDL_RenderGetLogicalSize
@@ -36,14 +28,10 @@
 // SDL_RenderSetScale
 // SDL_RenderSetViewport
 // SDL_RenderTargetSupported
-// SDL_SetRenderDrawBlendMode
-// SDL_SetRenderDrawColor
 // SDL_SetRenderTarget
 // SDL_SetTextureAlphaMod
 // SDL_SetTextureBlendMode
 // SDL_SetTextureColorMod
-// SDL_UnlockTexture
-// SDL_UpdateTexture
 // SDL_UpdateYUVTexture
 
 namespace sdl2_bindings {
@@ -282,10 +270,137 @@ METHOD(RenderCopyExCmp) {
     }
 }
 
+METHOD(RenderDrawLine) {
+    BEGIN();
+    UNWRAP(renderer, Renderer, args[0]);
+    INTARG(x1, 1);
+    INTARG(y1, 2);
+    INTARG(x2, 3);
+    INTARG(y2, 4);
+    if (SDL_RenderDrawLine(renderer->renderer_, x1, y1, x2, y2) < 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
+METHOD(RenderDrawLines) {
+    BEGIN();
+    UNWRAP(renderer, Renderer, args[0]);
+    ARRAYARG(points, 1);
+    int count = points->Length();
+    SDL_Point sdlPoints[count];
+    for (int ix = 0; ix < count; ++ix) {
+        extractPoint(isolate, points->Get(ix)->ToObject(), &sdlPoints[ix]);
+    }
+    if (SDL_RenderDrawLines(renderer->renderer_, sdlPoints, count) < 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
+METHOD(RenderDrawPoint) {
+    BEGIN();
+    UNWRAP(renderer, Renderer, args[0]);
+    INTARG(x, 1);
+    INTARG(y, 2);
+    if (SDL_RenderDrawPoint(renderer->renderer_, x, y) < 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
+METHOD(RenderDrawPoints) {
+    BEGIN();
+    UNWRAP(renderer, Renderer, args[0]);
+    ARRAYARG(points, 1);
+    int count = points->Length();
+    SDL_Point sdlPoints[count];
+    for (int ix = 0; ix < count; ++ix) {
+        extractPoint(isolate, points->Get(ix)->ToObject(), &sdlPoints[ix]);
+    }
+    if (SDL_RenderDrawPoints(renderer->renderer_, sdlPoints, count) < 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
+METHOD(RenderDrawRect) {
+    BEGIN();
+    UNWRAP(renderer, Renderer, args[0]);
+    OBJECTARG(rect, 1);
+    SDL_Rect sdlRect;
+    extractRect(isolate, rect, &sdlRect);
+    if (SDL_RenderDrawRect(renderer->renderer_, &sdlRect) < 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
+METHOD(RenderDrawRects) {
+    BEGIN();
+    UNWRAP(renderer, Renderer, args[0]);
+    ARRAYARG(rects, 1);
+    int count = rects->Length();
+    SDL_Rect sdlRects[count];
+    for (int ix = 0; ix < count; ++ix) {
+        extractRect(isolate, rects->Get(ix)->ToObject(), &sdlRects[ix]);
+    }
+    if (SDL_RenderDrawRects(renderer->renderer_, sdlRects, count) < 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
+METHOD(RenderFillRect) {
+    BEGIN();
+    UNWRAP(renderer, Renderer, args[0]);
+    OBJECTARG(rect, 1);
+    SDL_Rect sdlRect;
+    extractRect(isolate, rect, &sdlRect);
+    if (SDL_RenderFillRect(renderer->renderer_, &sdlRect) < 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
+METHOD(RenderFillRects) {
+    BEGIN();
+    UNWRAP(renderer, Renderer, args[0]);
+    ARRAYARG(rects, 1);
+    int count = rects->Length();
+    SDL_Rect sdlRects[count];
+    for (int ix = 0; ix < count; ++ix) {
+        extractRect(isolate, rects->Get(ix)->ToObject(), &sdlRects[ix]);
+    }
+    if (SDL_RenderFillRects(renderer->renderer_, sdlRects, count) < 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
+METHOD(SetRenderDrawBlendMode) {
+    BEGIN();
+    UNWRAP(r, Renderer, args[0]);
+    INTARG(blendMode, 1);
+    if (SDL_SetRenderDrawBlendMode(r->renderer_, (SDL_BlendMode)blendMode) < 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
+METHOD(SetRenderDrawColor) {
+    BEGIN();
+    UNWRAP(renderer, Renderer, args[0]);
+    INTARG(r, 1);
+    INTARG(g, 2);
+    INTARG(b, 3);
+    INTARG(a, 4);
+    if (SDL_SetRenderDrawColor(renderer->renderer_, r, g, b, a) < 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
 METHOD(RenderPresent) {
     BEGIN();
     UNWRAP(renderer, Renderer, args[0]);
     SDL_RenderPresent(renderer->renderer_);
+}
+
+METHOD(UnlockTexture) {
+    BEGIN();
+    UNWRAP(texture, Texture, args[0]);
+    SDL_UnlockTexture(texture->texture_);
 }
 
 void Init2DAcceleratedRenderingFunctions(Local<Object> exports) {
@@ -306,8 +421,19 @@ void Init2DAcceleratedRenderingFunctions(Local<Object> exports) {
     NODE_SET_METHOD(exports, "renderCopy", RenderCopy);
     NODE_SET_METHOD(exports, "renderCopyCmp", RenderCopyCmp);
     NODE_SET_METHOD(exports, "renderCopyEx", RenderCopy);
-    NODE_SET_METHOD(exports, "renderCopyCmpEx", RenderCopyCmp);
+    NODE_SET_METHOD(exports, "renderCopyExCmp", RenderCopyExCmp);
+    NODE_SET_METHOD(exports, "renderDrawLine", RenderDrawLine);
+    NODE_SET_METHOD(exports, "renderDrawLines", RenderDrawLines);
+    NODE_SET_METHOD(exports, "renderDrawPoint", RenderDrawPoint);
+    NODE_SET_METHOD(exports, "renderDrawPoints", RenderDrawPoints);
+    NODE_SET_METHOD(exports, "renderDrawRect", RenderDrawRect);
+    NODE_SET_METHOD(exports, "renderDrawRects", RenderDrawRects);
+    NODE_SET_METHOD(exports, "renderFillRect", RenderFillRect);
+    NODE_SET_METHOD(exports, "renderFillRects", RenderFillRects);
     NODE_SET_METHOD(exports, "renderPresent", RenderPresent);
+    NODE_SET_METHOD(exports, "setRenderDrawBlendMode", SetRenderDrawBlendMode);
+    NODE_SET_METHOD(exports, "setRenderDrawColor", SetRenderDrawColor);
+    NODE_SET_METHOD(exports, "unlockTexture", UnlockTexture);
 }
 
 }
