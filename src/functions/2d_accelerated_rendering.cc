@@ -14,24 +14,8 @@
 // TODO:
 // SDL_GetRenderDriverInfo
 // SDL_GetRendererInfo
-// SDL_QueryTexture
-// SDL_RenderGetClipRect
-// SDL_RenderGetIntegerScale
-// SDL_RenderGetLogicalSize
-// SDL_RenderGetScale
-// SDL_RenderGetViewport
-// SDL_RenderIsClipEnabled
 // SDL_RenderReadPixels
-// SDL_RenderSetClipRect
-// SDL_RenderSetIntegerScale
-// SDL_RenderSetLogicalSize
-// SDL_RenderSetScale
-// SDL_RenderSetViewport
-// SDL_RenderTargetSupported
 // SDL_SetRenderTarget
-// SDL_SetTextureAlphaMod
-// SDL_SetTextureBlendMode
-// SDL_SetTextureColorMod
 // SDL_UpdateYUVTexture
 
 namespace sdl2_bindings {
@@ -181,6 +165,24 @@ METHOD(GetTextureColorMod) {
         SET_KEY(obj, SYM(g), MK_NUMBER(g));
         SET_KEY(obj, SYM(b), MK_NUMBER(b));
         RETURN(obj);
+    }
+}
+
+METHOD(QueryTexture) {
+    BEGIN();
+    UNWRAP(t, Texture, args[0]);
+    uint32_t format;
+    int access, w, h;
+    if (SDL_QueryTexture(t->texture_, &format, &access, &w, &h) < 0) {
+        THROW_SDL_ERROR();
+    } else {
+        auto out = MK_OBJECT();
+        GET_CONTEXT();
+        SET_KEY(out, SYM(format), MK_NUMBER(format));
+        SET_KEY(out, SYM(access), MK_NUMBER(access));
+        SET_KEY(out, SYM(width), MK_NUMBER(w));
+        SET_KEY(out, SYM(height), MK_NUMBER(h));
+        RETURN(out);
     }
 }
 
@@ -455,6 +457,92 @@ METHOD(RenderPresent) {
     SDL_RenderPresent(renderer->renderer_);
 }
 
+METHOD(RenderSetClipRect) {
+    BEGIN();
+    UNWRAP(renderer, Renderer, args[0]);
+    OBJECTARG(rect, 1);
+    SDL_Rect sdlRect;
+    extractRect(isolate, rect, &sdlRect);
+    if (SDL_RenderSetClipRect(renderer->renderer_, &sdlRect) < 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
+METHOD(RenderSetIntegerScale) {
+    BEGIN();
+    UNWRAP(renderer, Renderer, args[0]);
+    BOOLARG(enable, 1);
+    if (SDL_RenderSetIntegerScale(renderer->renderer_, enable ? SDL_TRUE : SDL_FALSE) < 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
+METHOD(RenderSetLogicalSize) {
+    BEGIN();
+    UNWRAP(renderer, Renderer, args[0]);
+    INTARG(w, 1);
+    INTARG(h, 2);
+    if (SDL_RenderSetLogicalSize(renderer->renderer_, w, h) < 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
+METHOD(RenderSetScale) {
+    BEGIN();
+    UNWRAP(renderer, Renderer, args[0]);
+    DOUBLEARG(sx, 1);
+    DOUBLEARG(sy, 2);
+    if (SDL_RenderSetScale(renderer->renderer_, (float)sx, (float)sy) < 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
+METHOD(RenderSetViewport) {
+    BEGIN();
+    UNWRAP(renderer, Renderer, args[0]);
+    OBJECTARG(rect, 1);
+    SDL_Rect sdlRect;
+    extractRect(isolate, rect, &sdlRect);
+    if (SDL_RenderSetViewport(renderer->renderer_, &sdlRect) < 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
+METHOD(RenderTargetSupported) {
+    BEGIN();
+    UNWRAP(renderer, Renderer, args[0]);
+    RETURN(MK_BOOL(SDL_RenderTargetSupported(renderer->renderer_) == SDL_TRUE));
+}
+
+METHOD(SetTextureAlphaMod) {
+    BEGIN();
+    UNWRAP(t, Texture, args[0]);
+    INTARG(alpha, 1);
+    if (SDL_SetTextureAlphaMod(t->texture_, alpha) < 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
+METHOD(SetTextureBlendMode) {
+    BEGIN();
+    UNWRAP(t, Texture, args[0]);
+    INTARG(blendMode, 1);
+    if (SDL_SetTextureBlendMode(t->texture_, (SDL_BlendMode)blendMode) < 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
+METHOD(SetTextureColorMod) {
+    BEGIN();
+    UNWRAP(t, Texture, args[0]);
+    INTARG(r, 1);
+    INTARG(g, 2);
+    INTARG(b, 3);
+    if (SDL_SetTextureColorMod(t->texture_, r, g, b) < 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
 METHOD(UnlockTexture) {
     BEGIN();
     UNWRAP(texture, Texture, args[0]);
@@ -475,6 +563,7 @@ void Init2DAcceleratedRenderingFunctions(Local<Object> exports) {
     NODE_SET_METHOD(exports, "getTextureAlphaMod", GetTextureAlphaMod);
     NODE_SET_METHOD(exports, "getTextureBlendMode", GetTextureBlendMode);
     NODE_SET_METHOD(exports, "getTextureColorMod", GetTextureColorMod);
+    NODE_SET_METHOD(exports, "queryTexture", QueryTexture);
     NODE_SET_METHOD(exports, "renderClear", RenderClear);
     NODE_SET_METHOD(exports, "renderCopy", RenderCopy);
     NODE_SET_METHOD(exports, "renderCopyCmp", RenderCopyCmp);
@@ -495,8 +584,17 @@ void Init2DAcceleratedRenderingFunctions(Local<Object> exports) {
     NODE_SET_METHOD(exports, "renderGetViewport", RenderGetViewport);
     NODE_SET_METHOD(exports, "renderIsClipEnabled", RenderIsClipEnabled);
     NODE_SET_METHOD(exports, "renderPresent", RenderPresent);
+    NODE_SET_METHOD(exports, "renderSetClipRect", RenderSetClipRect);
+    NODE_SET_METHOD(exports, "renderSetIntegerScale", RenderSetIntegerScale);
+    NODE_SET_METHOD(exports, "renderSetLogicalSize", RenderSetLogicalSize);
+    NODE_SET_METHOD(exports, "renderSetScale", RenderSetScale);
+    NODE_SET_METHOD(exports, "renderSetViewport", RenderSetViewport);
+    NODE_SET_METHOD(exports, "renderTargetSupported", RenderTargetSupported);
     NODE_SET_METHOD(exports, "setRenderDrawBlendMode", SetRenderDrawBlendMode);
     NODE_SET_METHOD(exports, "setRenderDrawColor", SetRenderDrawColor);
+    NODE_SET_METHOD(exports, "setTextureAlphaMod", SetTextureAlphaMod);
+    NODE_SET_METHOD(exports, "setTextureBlendMode", SetTextureBlendMode);
+    NODE_SET_METHOD(exports, "setTextureColorMod", SetTextureColorMod);
     NODE_SET_METHOD(exports, "unlockTexture", UnlockTexture);
 }
 
