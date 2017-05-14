@@ -4,6 +4,14 @@ namespace sdl2_bindings {
 
 using namespace v8;
 
+void attachWindowReference(SDL_Window *sdlWindow, Window *window) {
+    SDL_SetWindowData(sdlWindow, "nw", window);
+}
+
+Window* getWindowReference(SDL_Window *sdlWindow) {
+    return (Window*)SDL_GetWindowData(sdlWindow, "nw");
+}
+
 void extractPoint(Isolate *isolate, Local<Object> obj, SDL_Point *point) {
     GET_CONTEXT();
     point->x = obj->Get(ctx, SYM(x)).ToLocalChecked()->Int32Value();

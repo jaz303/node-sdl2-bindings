@@ -370,6 +370,64 @@ METHOD(RenderFillRects) {
     }
 }
 
+METHOD(RenderGetClipRect) {
+    BEGIN();
+    UNWRAP(r, Renderer, args[0]);
+    SDL_Rect sdlRect;
+    SDL_RenderGetClipRect(r->renderer_, &sdlRect);
+    auto obj = MK_OBJECT();
+    populateRect(isolate, obj, &sdlRect);
+    RETURN(obj);
+}
+
+METHOD(RenderGetIntegerScale) {
+    BEGIN();
+    UNWRAP(r, Renderer, args[0]);
+    auto res = SDL_RenderGetIntegerScale(r->renderer_);
+    RETURN(MK_BOOL(res == SDL_TRUE));
+}
+
+METHOD(RenderGetLogicalSize) {
+    BEGIN();
+    UNWRAP(r, Renderer, args[0]);
+    int w, h;
+    SDL_RenderGetLogicalSize(r->renderer_, &w, &h);
+    auto out = MK_OBJECT();
+    GET_CONTEXT();
+    SET_KEY(out, SYM(width), MK_NUMBER(w));
+    SET_KEY(out, SYM(height), MK_NUMBER(h));
+    RETURN(out);
+}
+
+METHOD(RenderGetScale) {
+    BEGIN();
+    UNWRAP(r, Renderer, args[0]);
+    float x, y;
+    SDL_RenderGetScale(r->renderer_, &x, &y);
+    auto out = MK_OBJECT();
+    GET_CONTEXT();
+    SET_KEY(out, SYM(x), MK_NUMBER(x));
+    SET_KEY(out, SYM(y), MK_NUMBER(y));
+    RETURN(out);
+}
+
+METHOD(RenderGetViewport) {
+    BEGIN();
+    UNWRAP(r, Renderer, args[0]);
+    SDL_Rect sdlRect;
+    SDL_RenderGetViewport(r->renderer_, &sdlRect);
+    auto obj = MK_OBJECT();
+    populateRect(isolate, obj, &sdlRect);
+    RETURN(obj);
+}
+
+METHOD(RenderIsClipEnabled) {
+    BEGIN();
+    UNWRAP(r, Renderer, args[0]);
+    auto res = SDL_RenderIsClipEnabled(r->renderer_);
+    RETURN(MK_BOOL(res == SDL_TRUE));
+}
+
 METHOD(SetRenderDrawBlendMode) {
     BEGIN();
     UNWRAP(r, Renderer, args[0]);
@@ -430,6 +488,12 @@ void Init2DAcceleratedRenderingFunctions(Local<Object> exports) {
     NODE_SET_METHOD(exports, "renderDrawRects", RenderDrawRects);
     NODE_SET_METHOD(exports, "renderFillRect", RenderFillRect);
     NODE_SET_METHOD(exports, "renderFillRects", RenderFillRects);
+    NODE_SET_METHOD(exports, "renderGetClipRect", RenderGetClipRect);
+    NODE_SET_METHOD(exports, "renderGetIntegerScale", RenderGetIntegerScale);
+    NODE_SET_METHOD(exports, "renderGetLogicalSize", RenderGetLogicalSize);
+    NODE_SET_METHOD(exports, "renderGetScale", RenderGetScale);
+    NODE_SET_METHOD(exports, "renderGetViewport", RenderGetViewport);
+    NODE_SET_METHOD(exports, "renderIsClipEnabled", RenderIsClipEnabled);
     NODE_SET_METHOD(exports, "renderPresent", RenderPresent);
     NODE_SET_METHOD(exports, "setRenderDrawBlendMode", SetRenderDrawBlendMode);
     NODE_SET_METHOD(exports, "setRenderDrawColor", SetRenderDrawColor);

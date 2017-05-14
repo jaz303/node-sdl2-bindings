@@ -29,6 +29,7 @@ Local<Object> Window::NewInstance(Isolate *isolate, SDL_Window *window) {
     Local<Object> instance = cons->NewInstance(context).ToLocalChecked();
     Window *w = new Window(window);
     w->Wrap(instance);
+    attachWindowReference(window, w);
     return instance;
 }
 

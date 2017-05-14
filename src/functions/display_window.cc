@@ -4,8 +4,6 @@
 // SDL_CreateWindowAndRenderer - just use two separate calls
 // SDL_CreateWindowFrom - tricky, not particularly useful
 // SDL_GetWindowData, SDL_SetWindowData - just add properties to JS window object
-// SDL_GetWindowFromID - implemented in JS
-// SDL_GetGrabbedWindow - implemented in JS
 // SDL_SetWindowModalFor - omitted as X11 only
 // SDL_GetWindowWMInfo - omitted, limited use
 
@@ -151,6 +149,27 @@ METHOD(GetDisplayUsableBounds) {
         auto out = MK_OBJECT();
         populateRect(isolate, out, &rect);
         RETURN(out);
+    }
+}
+
+METHOD(GetWindowFromId) {
+    BEGIN();
+    UINT32ARG(id, 0);
+    SDL_Window *window = SDL_GetWindowFromID(id);
+    if (window == nullptr) {
+        THROW_SDL_ERROR();
+    } else {
+        auto wrappedWindow = getWindowReference(window);
+    }
+}
+
+METHOD(GetGrabbedWindow) {
+    BEGIN();
+    SDL_Window *window = SDL_GetGrabbedWindow();
+    if (window == nullptr) {
+        RETURN(MK_NULL());
+    } else {
+        auto wrappedWindow = getWindowReference(window);
     }
 }
 
@@ -572,6 +591,9 @@ void InitDisplayWindowFunctions(Local<Object> exports) {
     
     NODE_SET_METHOD(exports, "getWindowDisplayMode", GetWindowDisplayMode);
     NODE_SET_METHOD(exports, "setWindowDisplayMode", SetWindowDisplayMode);
+
+    NODE_SET_METHOD(exports, "getWindowFromId", GetWindowFromId);
+    NODE_SET_METHOD(exports, "getGrabbedWindow", GetGrabbedWindow);
 
     NODE_SET_METHOD(exports, "getWindowSize", GetWindowSize);
     NODE_SET_METHOD(exports, "setWindowSize", SetWindowSize);
