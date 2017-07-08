@@ -2,21 +2,27 @@
 
 // Not implemented:
 // SDL_CreateWindowAndRenderer - just use two separate calls
-// SDL_GetRenderTarget - need to be able to map from SDL_Texture* to Texture
-// SDL_GetRenderer - need to stash renderer on window
-// SDL_LockTexture - need to decide best way to get data out
-// SDL_UpdateTexture - ditto
 
 // Caveats:
 // SDL_GL_BindTexture - doesn't return texw, texh
 // SDL_GetRenderDrawColor - returns uint32 in ARGB32 format
 
 // TODO:
+// SDL_GetRenderer - need to stash renderer on window
+
+// SDL_GetRenderTarget
+// SDL_SetRenderTarget
+// "set" should stash in hidden field. return it.
+
 // SDL_GetRenderDriverInfo
 // SDL_GetRendererInfo
+// Just populate an object
+
+// SDL_LockTexture - need to decide best way to get data out
+// SDL_UpdateTexture - ditto
 // SDL_RenderReadPixels
-// SDL_SetRenderTarget
 // SDL_UpdateYUVTexture
+// need to sort out pixel data stuff
 
 namespace sdl2_bindings {
 

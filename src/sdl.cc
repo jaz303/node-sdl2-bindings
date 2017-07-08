@@ -8,6 +8,7 @@ void SDL2BindingsInit(Local<Object> exports) {
 	InitSymbols(exports->GetIsolate());
 	InitConstants(exports);
 
+	InitAudio(exports);
 	Init2DAcceleratedRenderingFunctions(exports);
 	InitClipboardFunctions(exports);
 	InitCoreFunctions(exports);

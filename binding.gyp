@@ -8,6 +8,7 @@
 				"src/sdl.cc",
 				"src/symbols.cc",
 
+				"src/functions/audio.cc",
 				"src/functions/2d_accelerated_rendering.cc",
 				"src/functions/clipboard.cc",
 				"src/functions/core.cc",

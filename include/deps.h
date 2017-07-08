@@ -15,7 +15,6 @@ namespace sdl2_bindings {
 #include "types.h"
 
 namespace sdl2_bindings {
-
 	void attachWindowReference(SDL_Window *sdlWindow, Window *window);
     Window* getWindowReference(SDL_Window *sdlWindow);
 	void extractPoint(Isolate *isolate, Local<Object> obj, SDL_Point *point);
@@ -27,6 +26,7 @@ namespace sdl2_bindings {
 	void InitSymbols(v8::Isolate *isolate);
 	void InitConstants(v8::Local<v8::Object> exports);
 
+	void InitAudio(Local<Object> exports);
 	void Init2DAcceleratedRenderingFunctions(Local<Object> exports);
 	void InitClipboardFunctions(v8::Local<v8::Object> exports);
 	void InitCoreFunctions(v8::Local<v8::Object> exports);

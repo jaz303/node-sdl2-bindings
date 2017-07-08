@@ -74,6 +74,9 @@
 #define ARRAYARG(name, ix) \
     Local<Array> name = Local<Array>::Cast(args[ix])
 
+#define FNARG(name, ix) \
+    Local<Function> name = Local<Function>::Cast(args[ix])
+
 #define CASTARG(name, type, ix) \
     Local<type> name = Local<type>::Cast(args[ix])
 

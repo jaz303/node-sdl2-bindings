@@ -4,23 +4,39 @@ console.log(sdl.INIT_EVERYTHING);
 
 sdl.init(sdl.INIT_EVERYTHING);
 
-const w = sdl.createWindow(
-	"Test Window",
-	sdl.WINDOWPOS_CENTERED,
-	sdl.WINDOWPOS_CENTERED,
-	800,
-	600,
-	sdl.WINDOW_RESIZABLE
-);
+// const w = sdl.createWindow(
+// 	"Test Window",
+// 	sdl.WINDOWPOS_CENTERED,
+// 	sdl.WINDOWPOS_CENTERED,
+// 	800,
+// 	600,
+// 	sdl.WINDOW_RESIZABLE
+// );
 
-console.log("window", w, sdl.getWindowId(w));
+// console.log("window", w, sdl.getWindowId(w));
 
-const surface = sdl.imageLoad("/Users/jason/Desktop/ml.jpg");
-console.log(surface, surface.format);
+// const surface = sdl.imageLoad("/Users/jason/Desktop/ml.jpg");
+// console.log(surface, surface.format);
 
-while (!sdl.quitRequested()) {
-	// sdl.pollEvent({})
-}
+let adid = sdl.openAudioDevice((buffer) => {
+	//console.log("callback fired!", buffer, buffer.length);
+	for (let ix = 0; ix < buffer.length; ++ix) {
+		buffer[ix] = Math.sin(ix * Math.PI * 2 / 44100 * 440) - 0.5;
+	}
+});
+
+sdl.pauseAudioDevice(adid, false);
+
+setInterval(() => {
+
+}, 100);
+
+// while (!sdl.quitRequested()) {
+// 	// sdl.pollEvent({})
+// }
+
+
+
 
 
 // const data = new Uint32Array(surface.data);
