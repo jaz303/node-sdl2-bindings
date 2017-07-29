@@ -5,6 +5,46 @@ namespace sdl2_bindings {
 
 using namespace v8;
 
+struct audio_context {
+    uv_async_t async_handle;
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    Uint8 *last_buffer, *buffer;
+    int last_buffer_len, buffer_len;
+    Persistent<Function> callback;
+    Persistent<ArrayBuffer> arrayBuffer;
+    Isolate *isolate;
+    SDL_AudioFormat format;
+
+    ~audio_context() {
+        pthread_cond_destroy(&cond);
+        pthread_mutex_destroy(&mutex);
+        callback.Reset();
+        arrayBuffer.Reset();
+    }
+};
+
+class AudioDevice : public node::ObjectWrap {
+public:
+    static void Init(Isolate *isolate);
+    static Local<Object> NewInstance(Isolate *isolate, SDL_AudioDeviceID deviceId, audio_context *ctx);
+
+    static METHOD(New);
+
+    void destroy();
+    bool isDestroyed();
+
+    SDL_AudioDeviceID deviceId_;
+
+private:
+    static v8::Persistent<v8::Function> constructor;
+    AudioDevice(SDL_AudioDeviceID deviceId, audio_context *ctx);
+    ~AudioDevice();
+
+    audio_context *audioContext_;
+    bool destroyed_;
+};
+
 class Cursor : public node::ObjectWrap {
 public:
     static void Init(Isolate *isolate);

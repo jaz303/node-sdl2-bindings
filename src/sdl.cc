@@ -26,6 +26,7 @@ void SDL2BindingsInit(Local<Object> exports) {
 	InitSurfaceDrawingFunctions(exports);
 	InitTimerFunctions(exports);
 
+	AudioDevice::Init(exports->GetIsolate());
 	Cursor::Init(exports->GetIsolate());
 	GameController::Init(exports->GetIsolate());
 	GLContext::Init(exports->GetIsolate());

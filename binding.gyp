@@ -26,6 +26,7 @@
 				"src/functions/surface_drawing.cc",
 				"src/functions/timers.cc",
 
+				"src/objects/audio_device.cc",
 				"src/objects/cursor.cc",
 				"src/objects/game_controller.cc",
 				"src/objects/gl_context.cc",

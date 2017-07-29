@@ -1,25 +1,4 @@
 #include "deps.h"
-#include <node.h>
-#include <uv.h>
-
-// TODO:
-// SDL_BuildAudioCVT
-// SDL_ConvertAudio
-// SDL_MixAudio
-// SDL_MixAudioFormat
-// SDL_OpenAudioDevice
-
-// Not implementing:
-// SDL_CloseAudio (deprecated)
-// SDL_OpenAudio (deprecated)
-// SDL_FreeWAV
-// SDL_LoadWAV (easier to use node directly?)
-// SDL_LoadWAV_RW (easier to use node directly?)
-// SDL_GetAudioStatus (deprecated)
-// SDL_LockAudio (deprecated)
-
-// REF:
-// https://gist.github.com/dmh2000/9519489#file-simple-node-js-async-c-addon-example-L2
 
 namespace sdl2_bindings {
 
@@ -39,23 +18,17 @@ METHOD(AudioQuit) {
 
 METHOD(ClearQueuedAudio) {
     BEGIN();
-    INTARG(dev, 0);
-    SDL_ClearQueuedAudio((SDL_AudioDeviceID)dev);
-}
-
-METHOD(CloseAudioDevice) {
-    BEGIN();
-    INTARG(dev, 0);
-    SDL_CloseAudioDevice((SDL_AudioDeviceID)dev);
+    UNWRAP(dev, AudioDevice, args[0]);
+    SDL_ClearQueuedAudio(dev->deviceId_);
 }
 
 METHOD(DequeueAudio) {
     BEGIN();
-    INTARG(dev, 0);
+    UNWRAP(dev, AudioDevice, args[0]);
     Local<ArrayBufferView> buffer = Local<ArrayBufferView>::Cast(args[1]);
     // FIXME: I think I may need to offset src by buffer->ByteOffset() ???
     void *src = buffer->Buffer()->GetContents().Data();
-    RETURN(MK_NUMBER(SDL_DequeueAudio(dev, src, buffer->ByteLength())));
+    RETURN(MK_NUMBER(SDL_DequeueAudio(dev->deviceId_, src, buffer->ByteLength())));
 }
 
 METHOD(GetAudioDeviceName) {
@@ -72,8 +45,8 @@ METHOD(GetAudioDeviceName) {
 
 METHOD(GetAudioDeviceStatus) {
     BEGIN();
-    INTARG(dev, 0);
-    RETURN(MK_NUMBER(SDL_GetAudioDeviceStatus((SDL_AudioDeviceID)dev)));
+    UNWRAP(dev, AudioDevice, args[0]);
+    RETURN(MK_NUMBER(SDL_GetAudioDeviceStatus(dev->deviceId_)));
 }
 
 METHOD(GetAudioDriver) {
@@ -110,27 +83,15 @@ METHOD(GetNumAudioDrivers) {
 
 METHOD(GetQueuedAudioSize) {
     BEGIN();
-    INTARG(dev, 0);
-    RETURN(MK_NUMBER(SDL_GetQueuedAudioSize(dev)));
+    UNWRAP(dev, AudioDevice, args[0]);
+    RETURN(MK_NUMBER(SDL_GetQueuedAudioSize(dev->deviceId_)));
 }
 
 METHOD(LockAudioDevice) {
     BEGIN();
-    INTARG(dev, 0);
-    SDL_LockAudioDevice(dev);
+    UNWRAP(dev, AudioDevice, args[0]);
+    SDL_LockAudioDevice(dev->deviceId_);
 }
-
-struct audio_context {
-    uv_async_t async_handle;
-    pthread_mutex_t mutex;
-    pthread_cond_t cond;
-    Uint8 *last_buffer, *buffer;
-    int last_buffer_len, buffer_len;
-    Persistent<Function> callback;
-    Persistent<ArrayBuffer> arrayBuffer;
-    Isolate *isolate;
-    SDL_AudioFormat format;
-};
 
 static void audioCallbackHandler(uv_async_t *handle) {
     audio_context *ctx = (audio_context*)handle;
@@ -186,35 +147,52 @@ static void audioCallback(void *userdata, Uint8 *stream, int len) {
     pthread_mutex_unlock(&ctx->mutex);
 }
 
+METHOD(CloseAudioDevice) {
+    BEGIN();
+    UNWRAP(audioDevice, AudioDevice, args[0]);
+    audioDevice->destroy();
+}
+
 METHOD(OpenAudioDevice) {
     BEGIN();
 
-    const char *name = SDL_GetAudioDeviceName(0, 0);
+    STRINGARG(deviceName, 0);
+    BOOLARG(isCapture, 1);
+    OBJECTARG(desired, 2);
+    INTARG(allowedChanges, 4);
 
-    if (!args[0]->IsFunction()) {
-        THROW(Error, "first argument must be a function");
+    SDL_AudioSpec sdlDesired, sdlObtained;
+
+    GET_CONTEXT();
+
+    sdlDesired.freq = desired->Get(ctx, SYM(freq)).ToLocalChecked()->Int32Value();
+    sdlDesired.format = desired->Get(ctx, SYM(format)).ToLocalChecked()->Int32Value();
+    sdlDesired.channels = desired->Get(ctx, SYM(channels)).ToLocalChecked()->Int32Value();
+    sdlDesired.samples = desired->Get(ctx, SYM(samples)).ToLocalChecked()->Int32Value();
+
+    audio_context *audioContext = nullptr;
+    auto callback = desired->Get(ctx, SYM(callback)).ToLocalChecked();
+    if (callback->IsFunction()) {
+        audioContext = new audio_context;
+        pthread_mutex_init(&audioContext->mutex, nullptr);
+        pthread_cond_init(&audioContext->cond, nullptr);
+        audioContext->last_buffer = audioContext->buffer = nullptr;
+        audioContext->last_buffer_len = audioContext->buffer_len = 0;
+        audioContext->isolate = isolate;
+        audioContext->callback.Reset(isolate, Local<Function>::Cast(callback));
+        sdlDesired.callback = audioCallback;
+        sdlDesired.userdata = audioContext;
+    } else {
+        sdlDesired.callback = nullptr;
+        sdlDesired.userdata = nullptr;
     }
 
-    FNARG(cb, 0);
-    
-    SDL_AudioSpec desired, obtained;
-    desired.freq = 44100;
-    desired.format = AUDIO_F32;
-    desired.channels = 2;
-    desired.samples = 4096;
-    desired.callback = audioCallback;
+    auto deviceId = SDL_OpenAudioDevice(*deviceName, isCapture ? 1 : 0, &sdlDesired, &sdlObtained, allowedChanges);
+    if (deviceId == 0) {
+        THROW_SDL_ERROR();
+    }
 
-    audio_context *ctx = new audio_context;
-    pthread_mutex_init(&ctx->mutex, nullptr);
-    pthread_cond_init(&ctx->cond, nullptr);
-    ctx->last_buffer = ctx->buffer = nullptr;
-    ctx->last_buffer_len = ctx->buffer_len = 0;
-    ctx->isolate = isolate;
-    desired.userdata = ctx;
-
-    auto deviceId = SDL_OpenAudioDevice(name, 0, &desired, &obtained, 0);
-
-    switch (obtained.format) {
+    switch (sdlObtained.format) {
         case AUDIO_S8:
         case AUDIO_U8:
         case AUDIO_S16:
@@ -225,30 +203,44 @@ METHOD(OpenAudioDevice) {
         case AUDIO_F32:
             break;
         default:
+            delete audioContext;
+            audioContext = nullptr;
+            SDL_CloseAudioDevice(deviceId);
             THROW(Error, "unsupported audio format");
             break;
     }
 
-    ctx->callback.Reset(isolate, cb);
-    ctx->format = obtained.format;
+    if (audioContext != nullptr) {
+        audioContext->format = sdlObtained.format;
+    }
 
-    RETURN(MK_NUMBER(deviceId));
+    if (!args[3]->IsNull() && !args[3]->IsUndefined()) {
+        OBJECTARG(obtained, 3);
+        SET_KEY(obtained, SYM(freq), MK_NUMBER(sdlObtained.freq));
+        SET_KEY(obtained, SYM(format), MK_NUMBER(sdlObtained.format));
+        SET_KEY(obtained, SYM(channels), MK_NUMBER(sdlObtained.channels));
+        SET_KEY(obtained, SYM(silence), MK_NUMBER(sdlObtained.silence));
+        SET_KEY(obtained, SYM(samples), MK_NUMBER(sdlObtained.samples));
+        SET_KEY(obtained, SYM(size), MK_NUMBER(sdlObtained.size));
+    }
+
+    RETURN(AudioDevice::NewInstance(isolate, deviceId, audioContext));
 }
 
 METHOD(PauseAudioDevice) {
     BEGIN();
-    INTARG(dev, 0);
+    UNWRAP(dev, AudioDevice, args[0]);
     BOOLARG(pauseOn, 1);
-    SDL_PauseAudioDevice(dev, pauseOn ? 1 : 0);
+    SDL_PauseAudioDevice(dev->deviceId_, pauseOn ? 1 : 0);
 }
 
 METHOD(QueueAudio) {
     BEGIN();
-    INTARG(dev, 0);
+    UNWRAP(dev, AudioDevice, args[0]);
     Local<ArrayBufferView> buffer = Local<ArrayBufferView>::Cast(args[1]);
     // FIXME: I think I may need to offset src by buffer->ByteOffset() ???
     void *src = buffer->Buffer()->GetContents().Data();
-    auto res = SDL_QueueAudio(dev, src, buffer->ByteLength());
+    auto res = SDL_QueueAudio(dev->deviceId_, src, buffer->ByteLength());
     if (res < 0) {
         THROW_SDL_ERROR();
     }
@@ -256,14 +248,13 @@ METHOD(QueueAudio) {
 
 METHOD(UnlockAudioDevice) {
     BEGIN();
-    INTARG(dev, 0);
-    SDL_UnlockAudioDevice(dev);
+    UNWRAP(dev, AudioDevice, args[0]);
+    SDL_UnlockAudioDevice(dev->deviceId_);
 }
 
 void InitAudio(Local<Object> exports) {
     NODE_SET_METHOD(exports, "audioInit", AudioInit);
     NODE_SET_METHOD(exports, "audioQuit", AudioQuit);
-    NODE_SET_METHOD(exports, "closeAudioDevice", CloseAudioDevice);
     NODE_SET_METHOD(exports, "dequeueAudio", DequeueAudio);
     NODE_SET_METHOD(exports, "getAudioDeviceName", GetAudioDeviceName);
     NODE_SET_METHOD(exports, "getAudioDeviceStatus", GetAudioDeviceStatus);
@@ -273,6 +264,7 @@ void InitAudio(Local<Object> exports) {
     NODE_SET_METHOD(exports, "getNumAudioDrivers", GetNumAudioDrivers);
     NODE_SET_METHOD(exports, "getQueuedAudioSize", GetQueuedAudioSize);
     NODE_SET_METHOD(exports, "lockAudioDevice", LockAudioDevice);
+    NODE_SET_METHOD(exports, "closeAudioDevice", CloseAudioDevice);
     NODE_SET_METHOD(exports, "openAudioDevice", OpenAudioDevice);
     NODE_SET_METHOD(exports, "pauseAudioDevice", PauseAudioDevice);
     NODE_SET_METHOD(exports, "queueAudio", QueueAudio);

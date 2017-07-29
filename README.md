@@ -17,6 +17,27 @@ The bindings implemented by this library are pretty "raw"; little-to-no argument
   - Finish off surface handling
   - Figure out strategy for audio
 
+## Functions not yet implemented
+
+### Audio
+
+  - `SDL_BuildAudioCVT`
+  - `SDL_ConvertAudio`
+  - `SDL_MixAudio`
+  - `SDL_MixAudioFormat`
+
+## Functions that won't be implemented
+
+### Audio
+
+  - `SDL_CloseAudio` (deprecated)
+  - `SDL_OpenAudio` (deprecated)
+  - `SDL_FreeWAV`
+  - `SDL_LoadWAV` (use an npm module)
+  - `SDL_LoadWAV_RW` (use an npm module)
+  - `SDL_GetAudioStatus` (deprecated)
+  - `SDL_LockAudio` (deprecated)
+
 ## Things that won't be implemented
   
   - Logging - use existing node.js logging libraries
