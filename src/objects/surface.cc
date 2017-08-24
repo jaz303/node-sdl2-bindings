@@ -61,7 +61,7 @@ GETTER(Surface::GetData) {
     auto existingData = args.This()->GetInternalField(1);
     if (existingData->IsUndefined()) {
         auto buffer = ArrayBuffer::New(isolate, s->surface_->pixels, s->surface_->pitch * s->surface_->h);
-        args.This()->SetInternalField(1, buffer);
+        args.This()->SetInternalField(1, Uint8Array::New(buffer, 0, buffer->ByteLength()));
         RETURN(buffer);
     } else {
         RETURN(existingData);
