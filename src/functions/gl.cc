@@ -60,6 +60,14 @@ METHOD(GLSwapWindow) {
     SDL_GL_SwapWindow(window->window_);
 }
 
+METHOD(GLSetSwapInterval) {
+    BEGIN();
+    UINT32ARG(interval, 0);
+    if (SDL_GL_SetSwapInterval(interval) != 0) {
+        THROW_SDL_ERROR();
+    }
+}
+
 void InitGLFunctions(Local<Object> exports) {
     NODE_SET_METHOD(exports, "glCreateContext", GLCreateContext);
     NODE_SET_METHOD(exports, "glGetAttribute", GLGetAttribute);
@@ -67,6 +75,7 @@ void InitGLFunctions(Local<Object> exports) {
     NODE_SET_METHOD(exports, "glResetAttributes", GLResetAttributes);
     NODE_SET_METHOD(exports, "glMakeCurrent", GLMakeCurrent);
     NODE_SET_METHOD(exports, "glSwapWindow", GLSwapWindow);
+    NODE_SET_METHOD(exports, "glSetSwapInterval", GLSetSwapInterval);
 }
 
 }
