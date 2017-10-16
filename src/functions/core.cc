@@ -84,6 +84,7 @@ void InitCoreFunctions(Local<Object> exports) {
     NODE_SET_METHOD(exports, "getVersion", GetVersion);
     NODE_SET_METHOD(exports, "getRevision", GetRevision);
     NODE_SET_METHOD(exports, "getRevisionNumber", GetRevisionNumber);
+    NODE_SET_METHOD(exports, "setHint", SetHint);
 }
 
 }
