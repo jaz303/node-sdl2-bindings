@@ -67,6 +67,13 @@ METHOD(GetRevisionNumber) {
     RETURN(MK_NUMBER(SDL_GetRevisionNumber()));
 }
 
+METHOD(SetHint) {
+    BEGIN();
+    STRINGARG(name, 0);
+    STRINGARG(value, 1);
+    RETURN(MK_BOOL(SDL_SetHint(*name, *value)));
+}
+
 void InitCoreFunctions(Local<Object> exports) {
     NODE_SET_METHOD(exports, "init", Init);
     NODE_SET_METHOD(exports, "initSubSystem", InitSubSystem);
