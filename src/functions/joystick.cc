@@ -40,7 +40,7 @@ METHOD(JoystickGetAttached) {
 
 METHOD(JoystickGetAxis) {
     BEGIN();
-    EXTRACT_JOYSTICK(0);
+    EXTRACT_JOYSTICK(0);    
     INTARG(axis, 1);
     RETURN(MK_NUMBER(SDL_JoystickGetHat(js->joystick_, axis)));
 }
@@ -49,7 +49,16 @@ METHOD(JoystickGetBall) {
     BEGIN();
     EXTRACT_JOYSTICK(0);
     INTARG(ball, 1);
-    RETURN(MK_NUMBER(SDL_JoystickGetHat(js->joystick_, ball)));
+    int dx, dy;
+    int res = SDL_JoystickGetBall(js->joystick_, ball, &dx, &dy);
+    if (res < 0) {
+        THROW_SDL_ERROR();
+    }
+    auto out = MK_OBJECT();
+    GET_CONTEXT();
+    SET_KEY(out, SYM(dx), MK_NUMBER(dx));
+    SET_KEY(out, SYM(dy), MK_NUMBER(dy));
+    RETURN(out);
 }
 
 METHOD(JoystickGetButton) {
@@ -76,17 +85,17 @@ void getGUID(const FunctionCallbackInfo<Value>& args, Isolate *isolate, SDL_Joys
     }
 }
 
-METHOD(JoystickGetGUID) {
-    BEGIN();
-    EXTRACT_JOYSTICK(0);
-    auto guid = SDL_JoystickGetGUID(js->joystick_);
-    getGUID(args, isolate, &guid);
-}
-
 METHOD(JoystickGetDeviceGUID) {
     BEGIN();
     INTARG(deviceIndex, 0);
     auto guid = SDL_JoystickGetDeviceGUID(deviceIndex);
+    getGUID(args, isolate, &guid);
+}
+
+METHOD(JoystickGetGUID) {
+    BEGIN();
+    EXTRACT_JOYSTICK(0);
+    auto guid = SDL_JoystickGetGUID(js->joystick_);
     getGUID(args, isolate, &guid);
 }
 
@@ -99,7 +108,8 @@ METHOD(JoystickGetHat) {
 
 METHOD(JoystickInstanceID) {
     BEGIN();
-    RETURN(args[0]);
+    EXTRACT_JOYSTICK(0);
+    RETURN(MK_NUMBER(SDL_JoystickInstanceID(js->joystick_)));
 }
 
 METHOD(JoystickName) {
